@@ -14,7 +14,7 @@ Does this code function better than the board that the MPP came with? No, at lea
 * Adjustable Burst Size
 * Variable idle positions
 * SW safety (on top of mechanical safety)
-* Voltage Monaturing (planned)
+* Voltage Monitoring (planned)
 
 # Pinout
 <img width="551" height="312" alt="image" src="https://github.com/user-attachments/assets/bb3becad-2411-4655-9445-f03059b6c335" />
