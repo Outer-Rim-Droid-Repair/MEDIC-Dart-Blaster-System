@@ -7,8 +7,15 @@ void update_sensor_state() {
 }
 
 void update_trigger_state() {
-  lastTriggerState = currentTriggerState;
-  currentTriggerState = !tiggerPin;
+  int reading = !tiggerPin;
+  if (reading != lastTriggerState) {
+    lastTriggerDebounce = millis();
+    lastTriggerState = reading;
+  }
+  if ((millis() - lastTriggerDebounce) > triggerDebounceTime) {
+    lastTriggerState = currentTriggerState;
+    currentTriggerState = reading;
+  }
 }
 
 void update_safety_state() {

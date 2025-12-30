@@ -1,8 +1,8 @@
 #include "pins_arduino.h"
 // input pins
 #define TRIGGER_PIN_NUMBER 19
-#define BREACH_PIN_NUMBER 20
-#define PLUNGER_PIN_NUMBER 18   
+#define BREACH_PIN_NUMBER 18
+#define PLUNGER_PIN_NUMBER 20   
 #define SAFETY_PIN_NUMBER 12
 #define FIRE_SELECT_PIN_1_NUMBER 21
 #define FIRE_SELECT_PIN_2_NUMBER 22
@@ -77,8 +77,17 @@ states nextState = DEPRIME_STATE;                // Firing State machine state. 
 bool triggerReleased = true;                      // Has the trigger been released after the last shot. Used to force trigger release when needed
 int burstCount = 0;                               // How many shots have been fired 
 
+bool blasterSetup = false;                        // cycles to correct starting possition
+long triggerHoldTime = 0;                         // Used for timeing how long the trigger has beenheld down
+
+unsigned long triggerDebounceTime = 2;            // for trigger debounce
+unsigned long lastTriggerDebounce = 0;            // for trigger debounce
+
+
+long lastDevMessage = 0;
+
 // User controlled settings.
-idleMode idlePossition = DEPRIMED_IDLE;          // where should the firing cycle end?
+idleMode idlePossition = PRIMED_IDLE;          // where should the firing cycle end?
 int burstLimit = 3;                               // How many darts in a burst fire.
 // Could make this a by mode option. i.e. user could select burst 2 and burst 4 as their fire modes
 int maxDPS = 5;                                  // limit on number of darts per second

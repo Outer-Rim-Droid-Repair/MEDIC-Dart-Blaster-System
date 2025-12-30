@@ -25,11 +25,17 @@ void setup() {
 
   Serial.begin(9600); // initialize serial communication:
   Serial.println("starting up");
+
+  
 }
 
 void loop() {
   if (DEBUG_MODE) {  // if debug print states
-    // dev_write_serial_all_states();
+    if (millis() - lastDevMessage >= 2*1000UL) 
+    {
+      lastDevMessage = millis();
+      dev_write_serial_all_states();
+    }
   }
 
   // update all
@@ -44,19 +50,68 @@ void loop() {
     burstCount = 0;
   }
   if (safetyState) { // safty is on
+    if (currentTriggerState and !blasterSetup and triggerReleased) {  // do initial setup
+      Serial.println("setting up");
+      dev_write_serial_all_states();
+      triggerReleased = false;  // Require the trigger to be released
+      sensorState targetsensorState;
+      if (idlePossition == DEPRIMED_IDLE) {
+        targetsensorState = CLOSED_BREACH;
+      } else if (idlePossition == PRIMED_IDLE) {
+        targetsensorState = FIRE_READY;
+      } else {
+        Serial.println("invalid idle possition");
+        return;
+      }
+      if (currentSensorState != targetsensorState) {
+        Serial.print(currentSensorState);
+        Serial.print(" : ");
+        Serial.println(targetsensorState);
+        run_motor();
+        bool a = waitTillSensorChangeDebounce(currentSensorState, targetsensorState);
+        stop_motor();
+        Serial.println(a);
+      }
+      dev_write_serial_all_states();
+      blasterSetup = true;
+    } else if (currentTriggerState) { // deprime
+      if (triggerHoldTime == 0) {  // first time through after trigger pull
+        if (triggerReleased) {
+          Serial.println("starting trigger time");
+          dev_write_serial_all_states();
+          triggerReleased = false;
+          triggerHoldTime = millis();
+        }
+      } else {  //trigger is being held down
+        if ((millis() - triggerHoldTime) > 5000) {  // require 5 second hold to deprime
+          Serial.println("deprime");
+          Serial.println(currentSensorState);
+          if (currentSensorState != CLOSED_BREACH) {
+            run_motor();
+            waitTillSensorChangeDebounce(currentSensorState, CLOSED_BREACH);
+            stop_motor();
+            
+            dev_write_serial_all_states();
+          }
+          blasterSetup = false;
+          triggerHoldTime = 0;
+          
+        }
+      }
+    }
     // do nothing
     // TODO add deprime mode
   } else if (currentTriggerState and triggerReleased) {  // fire next dart
     switch (selectedFireMode) {
       case SINGLE_FIRE:
         fire();
-        triggerReleased = false;  // Require thr trigger to be released
+        triggerReleased = false;  // Require the trigger to be released
         break;
       case BURST_FIRE:
         fire();
         burstCount += 1;
         if (burstCount >= burstLimit) { // once burst limit has been reached
-          triggerReleased = false; // Require thr trigger to be released
+          triggerReleased = false; // Require the trigger to be released
         }
         break;
       case AUTO_FIRE:
@@ -84,9 +139,9 @@ void fire() {
   //               max fire rate - time firing
   int delaytime = (1000/maxDPS) - (fireStop - fireStart);
   if (delaytime < 10) { // if delay too low
-    // delaytime = 10;
+    delaytime = 10;
   }
-  // delay(delaytime);  taken out till single fire is consistent
+  delay(delaytime);
   Serial.println(delaytime);
 }
 
@@ -149,6 +204,7 @@ void fireStateMachine() {
         // wait till sensor state is 1,1 then go to fire ready state
         stop_motor();
         if (waitTillSensorChangeDebounce(PRIMED, FIRE_READY)) { // wait for breach to fully close
+          stop_motor();
           nextState = FIRE_READY_STATE;
         } else {
           nextState = ERROR_STATE;
@@ -162,6 +218,8 @@ void fireStateMachine() {
         stop_motor();
         if (idlePossition == PRIMED_IDLE) { // complete firing if required
           nextState = COMPLETE_STATE;
+          update_sensor_state();
+          Serial.println("complete firing");
         } else {
           nextState = FIRING_STATE;
         }
@@ -198,23 +256,22 @@ void fireStateMachine() {
 bool waitTillSensorChangeDebounce(int initial_state, int target_state) {
   // blocking
 
-  int total_wait_time = millis(); // start timeout timer
-  int wait_debounce_time = millis(); // start time of debounce
+  unsigned long total_wait_time = millis(); // start timeout timer
+  unsigned long wait_debounce_time = micros(); // start time of debounce
 
   while (true) {
     update_sensor_state();
-    dev_write_serial_all_states();
     if (target_state == -1) {  // -1 means any other state is acceptable
       if (currentSensorState == initial_state){ // we want any non initial state
-        wait_debounce_time = millis();  // reset the debouncing timer
+        wait_debounce_time = micros();  // reset the debouncing timer
       }
     } else {
       if (currentSensorState != target_state){ // we want the target state
-        wait_debounce_time = millis();  // reset the debouncing timer
+        wait_debounce_time = micros();  // reset the debouncing timer
       }
     }
 
-    if ((millis() - wait_debounce_time) > 5) {
+    if ((micros() - wait_debounce_time) > 100) {
       // whatever the reading is at, it's been there for longer than the debounce
       // delay, so take it as the actual current state:
       if (target_state == -1) { // -1 means any other state is acceptable
@@ -227,7 +284,7 @@ bool waitTillSensorChangeDebounce(int initial_state, int target_state) {
         }
       }     
     }
-    if ((millis() - total_wait_time) > 200) { // 200mSec is one cycle time at 5 dps. chould reduce.
+    if ((millis() - total_wait_time) > 200) { // 200mSec is one cycle time at 5 dps. should reduce.
       return false;
     }
   }
