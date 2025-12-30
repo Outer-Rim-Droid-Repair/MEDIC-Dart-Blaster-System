@@ -17,7 +17,7 @@ Does this code function better than the board that the MPP came with? No, at lea
 * Voltage Monaturing (planned)
 
 # Pinout
-<img width="556" height="306" alt="image" src="https://github.com/user-attachments/assets/16f2b187-d789-4277-9f6d-4b2033a0c4c7" />
+<img width="551" height="312" alt="image" src="https://github.com/user-attachments/assets/bb3becad-2411-4655-9445-f03059b6c335" />
 
 # Project Pictures
 Coming soon
