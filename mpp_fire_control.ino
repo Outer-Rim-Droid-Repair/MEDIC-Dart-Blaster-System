@@ -123,14 +123,24 @@ void loop() {
 
 void fire() {
   // default state machine to expected start location.
-  // TODO this is not fully safe as the unit may be in a differnet state
-  if (idlePossition == DEPRIMED_IDLE) {
-    nextState = LOADING_STATE;
-  } else if (idlePossition == PRIMED_IDLE) {
-    nextState = FIRING_STATE;
-  } else {
-    Serial.println("invalid idle possition");
-    return;
+  switch (currentSensorState) {
+    case MID_CYCLE:
+      nextState = LOADING_STATE;
+      break;
+    case PRIMED:
+    // can only happen when breakis closing. 
+    // Should be long closed before this check
+      nextState = ERROR_STATE;   
+      break;
+    case CLOSED_BREACH:
+      nextState = LOADING_STATE;
+      break;
+    case FIRE_READY:
+      nextState = FIRING_STATE;
+      break;
+    default:
+      Serial.println("invalid idle possition");
+      return;
   }
 
   int fireStart = millis(); // start fire rate timmer   
@@ -149,6 +159,7 @@ void fireStateMachine() {
   // TODO this is blocking. should it be? can this be improved. issue could happen where user releases trigger during firing and pull again before completion. Dart won't fire but user would expect it to.
   while(true) { // loop till firing complete.
     if (DEBUG_MODE) { // if debug print states
+      update_sensor_state();
       dev_write_serial_all_states();
     }
     switch (nextState) {
@@ -177,9 +188,9 @@ void fireStateMachine() {
 
         if (waitTillSensorChangeDebounce(MID_CYCLE, -1)) {  // drive motor till state changes
           if (currentSensorState == PRIMED) {
-            nextState = LOADED_STATE;
-          } else if (currentSensorState == CLOSED_BREACH) {
             nextState = PRIMED_STATE;
+          } else if (currentSensorState == CLOSED_BREACH) {
+            nextState = LOADED_STATE;
           } else if (currentSensorState == FIRE_READY) {
             nextState = FIRE_READY_STATE;
           }
@@ -200,11 +211,10 @@ void fireStateMachine() {
         break;
       case PRIMED_STATE:
         // next state: FIRE_READY_STATE
-        // stop motor motor 
+        // stop motor 
         // wait till sensor state is 1,1 then go to fire ready state
         stop_motor();
         if (waitTillSensorChangeDebounce(PRIMED, FIRE_READY)) { // wait for breach to fully close
-          stop_motor();
           nextState = FIRE_READY_STATE;
         } else {
           nextState = ERROR_STATE;
@@ -218,8 +228,6 @@ void fireStateMachine() {
         stop_motor();
         if (idlePossition == PRIMED_IDLE) { // complete firing if required
           nextState = COMPLETE_STATE;
-          update_sensor_state();
-          Serial.println("complete firing");
         } else {
           nextState = FIRING_STATE;
         }
@@ -239,13 +247,11 @@ void fireStateMachine() {
         // clear firing related variables
         stop_motor();
         return;
-        break;
       case ERROR_STATE:
         //something went wrong
         // TODO inform user
         stop_motor();
         return;
-        break;
       default:
         stop_motor();
         return;
@@ -290,4 +296,13 @@ bool waitTillSensorChangeDebounce(int initial_state, int target_state) {
   }
 
   return true;
+}
+
+// motor function
+void run_motor() {
+  analogWrite(MOTOR_PIN, 255);
+}
+
+void stop_motor() {
+  analogWrite(MOTOR_PIN, 0);
 }
