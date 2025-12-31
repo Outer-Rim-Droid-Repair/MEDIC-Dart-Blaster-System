@@ -64,13 +64,9 @@ void loop() {
         return;
       }
       if (currentSensorState != targetsensorState) {
-        Serial.print(currentSensorState);
-        Serial.print(" : ");
-        Serial.println(targetsensorState);
         run_motor();
-        bool a = waitTillSensorChangeDebounce(currentSensorState, targetsensorState);
+        waitTillSensorChangeDebounce(currentSensorState, targetsensorState);
         stop_motor();
-        Serial.println(a);
       }
       dev_write_serial_all_states();
       blasterSetup = true;
@@ -78,29 +74,21 @@ void loop() {
       if (triggerHoldTime == 0) {  // first time through after trigger pull
         if (triggerReleased) {
           Serial.println("starting trigger time");
-          dev_write_serial_all_states();
           triggerReleased = false;
           triggerHoldTime = millis();
         }
       } else {  //trigger is being held down
         if ((millis() - triggerHoldTime) > 5000) {  // require 5 second hold to deprime
-          Serial.println("deprime");
-          Serial.println(currentSensorState);
           if (currentSensorState != CLOSED_BREACH) {
             run_motor();
             waitTillSensorChangeDebounce(currentSensorState, CLOSED_BREACH);
             stop_motor();
-            
-            dev_write_serial_all_states();
           }
           blasterSetup = false;
           triggerHoldTime = 0;
-          
         }
       }
     }
-    // do nothing
-    // TODO add deprime mode
   } else if (currentTriggerState and triggerReleased) {  // fire next dart
     switch (selectedFireMode) {
       case SINGLE_FIRE:
@@ -128,8 +116,8 @@ void fire() {
       nextState = LOADING_STATE;
       break;
     case PRIMED:
-    // can only happen when breakis closing. 
-    // Should be long closed before this check
+      // can only happen when breach is closing. 
+      // Should be long closed before this check
       nextState = ERROR_STATE;   
       break;
     case CLOSED_BREACH:
