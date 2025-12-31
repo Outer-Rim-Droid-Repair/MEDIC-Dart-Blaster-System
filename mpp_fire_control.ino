@@ -170,6 +170,7 @@ void fireStateMachine() {
         // if 1,1 go to fire ready
         run_motor();
         if (!waitTillSensorChangeDebounce(CLOSED_BREACH, MID_CYCLE)) { // make sure motor drives off of base possition
+          Serial.println("Error from predrive LOADING_STATE");
           nextState = ERROR_STATE;
           break;
         }
@@ -183,6 +184,7 @@ void fireStateMachine() {
             nextState = FIRE_READY_STATE;
           }
         } else {
+          Serial.println("Error from main drive LOADING_STATE");
           nextState = ERROR_STATE;
         }
         break;
@@ -194,6 +196,7 @@ void fireStateMachine() {
         if (waitTillSensorChangeDebounce(CLOSED_BREACH, FIRE_READY)) { // drive motor till fire ready
           nextState = FIRE_READY_STATE;
         } else {
+          Serial.println("Error from LOADED_STATE");
           nextState = ERROR_STATE;
         }
         break;
@@ -205,6 +208,7 @@ void fireStateMachine() {
         if (waitTillSensorChangeDebounce(PRIMED, FIRE_READY)) { // wait for breach to fully close
           nextState = FIRE_READY_STATE;
         } else {
+          Serial.println("Error from PRIMED_STATE");
           nextState = ERROR_STATE;
         }
         break;
@@ -228,6 +232,7 @@ void fireStateMachine() {
         if (waitTillSensorChangeDebounce(FIRE_READY, -1)) { // run motor till off back sensor
           nextState = DEPRIME_STATE;
         } else {
+          Serial.println("Error from FIRING_STATE");
           nextState = ERROR_STATE;
         }
         break;
