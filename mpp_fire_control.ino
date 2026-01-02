@@ -58,6 +58,7 @@ void loop() {
         run_motor();
         if (!waitTillSensorChangeToValue(CLOSED_BREACH)) {
           Serial.println("Error in blaster setup");
+          return;
         }        
         stop_motor();
       } else if (idlePossition == PRIMED_IDLE) { // ready possition is 1,1: FIRE_READY
@@ -67,6 +68,7 @@ void loop() {
         int valid_states[2] = {FIRE_READY, PRIMED};  
         if (!waitTillSensorChangeToValue(valid_states, 2)) {
           Serial.println("Error in blaster setup");
+          return;
         }        
         stop_motor();
       } else {  // unknown idle possition
