@@ -63,7 +63,7 @@ void loop() {
       }
       if (currentSensorState != targetsensorState) {
         run_motor();
-        // waitTillSensorChangeDebounce(currentSensorState, targetsensorState);
+        waitTillSensorChangeToValueDebounce(targetsensorState);
         stop_motor();
       }
       dev_write_serial_all_states();
@@ -79,7 +79,7 @@ void loop() {
         if ((millis() - triggerHoldTime) > 5000) {  // require 5 second hold to deprime
           if (currentSensorState != CLOSED_BREACH) {
             run_motor();
-            // waitTillSensorChangeDebounce(currentSensorState, CLOSED_BREACH);
+            waitTillSensorChangeToValueDebounce(CLOSED_BREACH);
             stop_motor();
           }
           blasterSetup = false;
@@ -110,16 +110,16 @@ void loop() {
 void fire() {
   // default state machine to expected start location.
   Serial.println("-------------------- Firing --------------------");
-  int fireStart = millis(); // start fire rate timmer   
+  unsigned long fireStart = millis(); // start fire rate timmer   
   fireStateMachine(); // go through firing process
-  int fireStop = millis();  // stop fire timer
+  unsigned long fireStop = millis();  // stop fire timer
   //               max fire rate - time firing
   int delaytime = (1000/maxDPS) - (fireStop - fireStart);
-  delay(delaytime);
+  Serial.println(delaytime);
   if (delaytime < 10) { // if delay too low
     delaytime = 10;
   }
-  Serial.println(delaytime);
+  delay(delaytime);
 }
 
 void fireStateMachine() {
@@ -140,33 +140,64 @@ void fireStateMachine() {
     }
     switch (nextState) {
       case LEAVING_STARTING_POSSITION:
+      {
+        if (idlePossition == DEPRIMED_IDLE) {
+          nextState = CYCLE_TO_DEPRIMED;
+        } else if (idlePossition == PRIMED_IDLE) {
+          nextState = CYCLE_TO_PRIMED;
+        } else {
+          nextState = ERROR_STATE;
+          break;
+        }
         run_motor();
         if (!waitTillSensorChangeDebounce(startStopPossition)) { // make sure motor drives off of base possition
           Serial.println("Error from leaving start possition");
           nextState = ERROR_STATE;
           break;
         }
-        nextState = CYCLE_TO_END;
         break;
-      case CYCLE_TO_END:
+      }
+      case CYCLE_TO_PRIMED:
+      {
         run_motor();
-        // TODO could hit 0,1 before 1,1 need to handle
-        if (!waitTillSensorChangeDebounce(currentSensorState)) { // , startStopPossition)) { // drive till end possition
-          Serial.println("Error from predrive LOADING_STATE");
+        int valid_states[2] = {FIRE_READY, PRIMED};
+        if (!waitTillSensorChangeToValueDebounce(valid_states, 2)) { // drive till end possition
+          Serial.println("Error from CYCLE_TO_PRIMED");
+          nextState = ERROR_STATE;
+          break;
+        }
+        stop_motor();
+         if (!waitTillSensorChangeToValueDebounce(FIRE_READY)) { // wait till fire ready
+          Serial.println("Error from CYCLE_TO_PRIMED waiting for fire ready");
+          nextState = ERROR_STATE;
+          break;
+        }
+        nextState = COMPLETE_STATE;
+        break;
+      }
+      case CYCLE_TO_DEPRIMED:
+      {
+        run_motor();
+        if (!waitTillSensorChangeToValueDebounce(CLOSED_BREACH)) { // drive till end possition
+          Serial.println("Error from CYCLE_TO_DEPRIMED");
           nextState = ERROR_STATE;
           break;
         }
         stop_motor();
         nextState = COMPLETE_STATE;
         break;
+      }
       case COMPLETE_STATE:
+      {
         // clear firing related variables
         stop_motor();
         delay(100);  // here for debugging only TODO remove
         update_sensor_state();
         Serial.println(currentSensorState);
         return;
+      }
       case ERROR_STATE:
+      {
         //something went wrong
         // TODO inform user
         stop_motor();
@@ -177,77 +208,81 @@ void fireStateMachine() {
         update_fire_mode();
         dev_write_serial_all_states();
         return;
+      }
       default:
+      {
         stop_motor();
         return;
+      }
     }
   }
 }
 
 bool waitTillSensorChangeDebounce(int initial_state) {
-  // blocking
-
-  unsigned long total_wait_time = millis(); // start timeout timer
-  unsigned long wait_debounce_time = micros(); // start time of debounce
-
-  while (true) {
-    update_sensor_state();
-    if (currentSensorState == initial_state){ // we want any non initial state
-      wait_debounce_time = micros();  // reset the debouncing timer
-    }
-    
-    if ((micros() - wait_debounce_time) > 100) {
-      // whatever the reading is at, it's been there for longer than the debounce
-      // delay, so take it as the actual current state:
-      if (currentSensorState != initial_state){ // we want any non initial state
-        break;
-      }   
-    }
-    if ((millis() - total_wait_time) > 200) { // 200mSec is one cycle time at 5 dps. should reduce.
-      return false;
-    }
-  }
-
-  return true;
+  int list[3];
+  getAllSensorStatesBut(list, initial_state);
+  return waitTillSensorChangeToValueDebounce(list, 3);
 }
 
-bool waitTillSensorChangeDebounce_old(int initial_state, list target_state) {
-  // blocking
+void getAllSensorStatesBut(int * list, int state){
+  int i = 0;
+  if (MID_CYCLE != state) {
+    list[i] = MID_CYCLE;
+    i++;
+  }
+  if (PRIMED != state) {
+    list[i] = PRIMED;
+    i++;
+  }
+  if (CLOSED_BREACH != state) {
+    list[i] = CLOSED_BREACH;
+    i++;
+  }
+  if (FIRE_READY != state) {
+    list[i] = FIRE_READY;
+    i++;
+  }
+}
 
+bool waitTillSensorChangeToValueDebounce(int target_state) {
+  int list[] = {target_state};
+  return waitTillSensorChangeToValueDebounce(list, 1);
+}
+
+bool waitTillSensorChangeToValueDebounce(int target_states[], int length) {
+  // blocking
   unsigned long total_wait_time = millis(); // start timeout timer
   unsigned long wait_debounce_time = micros(); // start time of debounce
 
   while (true) {
     update_sensor_state();
-    if (target_state == -1) {  // -1 means any other state is acceptable
-      if (currentSensorState == initial_state){ // we want any non initial state
-        wait_debounce_time = micros();  // reset the debouncing timer
-      }
-    } else {
-      if (currentSensorState != target_state){ // we want the target state
-        wait_debounce_time = micros();  // reset the debouncing timer
-      }
+
+    if (!isValueInList(currentSensorState, target_states, length)) { // we want the target state
+      wait_debounce_time = micros();  // reset the debouncing timer
     }
 
     if ((micros() - wait_debounce_time) > 100) {
       // whatever the reading is at, it's been there for longer than the debounce
       // delay, so take it as the actual current state:
-      if (target_state == -1) { // -1 means any other state is acceptable
-        if (currentSensorState != initial_state){ // we want any non initial state
-          break;
-        }
-      } else {
-        if (currentSensorState == target_state){ // we want the target state
-          break;
-        }
+      if (isValueInList(currentSensorState, target_states, length)) { // we want the target state
+        return true;
       }     
     }
-    if ((millis() - total_wait_time) > 200) { // 200mSec is one cycle time at 5 dps. should reduce.
+    if ((millis() - total_wait_time) > 300) { // 200mSec is one cycle time at 5 dps. should reduce.
       return false;
     }
   }
 
-  return true;
+  return false;
+}
+
+bool isValueInList(int value, int list[], int length) {
+  for ( int i = 0; i < length; ++i ) {
+    if (list[i] == value) {
+      return true;
+    }
+  }
+  return false;
 }
 
 // motor function

@@ -46,18 +46,13 @@ const char* sensorStateStr[] = {"MID_CYCLE", "PRIMED", "CLOSED_BREACH", "FIRE_RE
 
 enum states           // States used for the fire state machine
 {
-  DEPRIME_STATE,      // Loader foward, Plunger forward
-  LOADING_STATE,      // Loader moving back, Plunger moving back
-  LOADED_STATE,       // Loader forwad, Plunger moving back
-  PRIMED_STATE,       // Loader moving forward, Plunger back
-  FIRE_READY_STATE,   // Loader forward, Plunger back
-  FIRING_STATE,       // Loader forward, Plunger moving forward
   COMPLETE_STATE,     // firing cycle complete
   ERROR_STATE,
   LEAVING_STARTING_POSSITION,
-  CYCLE_TO_END
+  CYCLE_TO_PRIMED,
+  CYCLE_TO_DEPRIMED
 };
-const char* stateMachineStr[] = {"DEPRIME_STATE", "LOADING_STATE", "LOADED_STATE", "PRIMED_STATE", "FIRE_READY_STATE", "FIRING_STATE", "COMPLETE_STATE", "ERROR_STATE"};
+const char* stateMachineStr[] = {"COMPLETE_STATE", "ERROR_STATE", "LEAVING_STARTING_POSSITION", "CYCLE_TO_PRIMED", "CYCLE_TO_DEPRIMED", "FIRING_STATE", "COMPLETE_STATE", "ERROR_STATE"};
 
 enum idleMode       //possible idle possitions
 {                   // BREACH_PIN,PLUNGER_PIN
@@ -74,7 +69,7 @@ volatile int currentSensorState = CLOSED_BREACH;  // Internal fire sensors read.
 int lastSensorState = CLOSED_BREACH;              // History of currentSensorState
 volatile int safetyState = LOW;                   // Is the Safty Enabled? High: Enabled, LOW: Disabled  
 volatile fireMode selectedFireMode = SINGLE_FIRE; // User selected fire mode. TODO allow a user selected array of fire modes
-states nextState = DEPRIME_STATE;                // Firing State machine state. Default to DEPRIME_STATE as this should be power down state
+states nextState;                                 // Firing State machine state. 
 
 bool triggerReleased = true;                      // Has the trigger been released after the last shot. Used to force trigger release when needed
 int burstCount = 0;                               // How many shots have been fired 
