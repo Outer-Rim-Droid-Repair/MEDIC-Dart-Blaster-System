@@ -53,7 +53,9 @@ enum states           // States used for the fire state machine
   FIRE_READY_STATE,   // Loader forward, Plunger back
   FIRING_STATE,       // Loader forward, Plunger moving forward
   COMPLETE_STATE,     // firing cycle complete
-  ERROR_STATE
+  ERROR_STATE,
+  LEAVING_STARTING_POSSITION,
+  CYCLE_TO_END
 };
 const char* stateMachineStr[] = {"DEPRIME_STATE", "LOADING_STATE", "LOADED_STATE", "PRIMED_STATE", "FIRE_READY_STATE", "FIRING_STATE", "COMPLETE_STATE", "ERROR_STATE"};
 
