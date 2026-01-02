@@ -18,25 +18,29 @@ void setup() {
   FireModePin1.mode(INPUT_PULLUP);
   FireModePin2.mode(INPUT_PULLUP);
   // outputs
-  LEDPin.mode(OUTPUT);
   pinMode(MOTOR_PIN, OUTPUT);
 
   stop_motor(); // turn off motor on boot
 
   Serial.begin(9600); // initialize serial communication:
-  Serial.println("starting up");
 }
 
 void loop() {
+  static bool blasterSetup = false;     // setup completion flag
+  static bool triggerReleased = true;   // Has the trigger been released after the last shot. Used to force trigger release when needed
+  static int burstCount = 0;            // How many shots have been fired 
+  static long lastDevMessage = 0;       // for timing debug messages
+
+
   if (DEBUG_MODE) {  // if debug print states
-    if (millis() - lastDevMessage >= 2*1000UL) 
+    if (millis() - lastDevMessage >= 5*1000UL) // Only write once every 2 seconds
     {
-      lastDevMessage = millis();
-      // dev_write_serial_all_states();
+      lastDevMessage = millis();      // Update timer
+      dev_write_serial_all_states();
     }
   }
 
-  // update all
+  // update all readings
   update_trigger_state();
   update_sensor_state();
   update_safety_state();
@@ -49,26 +53,29 @@ void loop() {
   }
   if (safetyState) { // safty is on
     if (currentTriggerState and !blasterSetup and triggerReleased) {  // do initial setup
-      Serial.println("setting up");
-      dev_write_serial_all_states();
       triggerReleased = false;  // Require the trigger to be released
-      sensorState targetsensorState;
-      if (idlePossition == DEPRIMED_IDLE) {
-        targetsensorState = CLOSED_BREACH;
-      } else if (idlePossition == PRIMED_IDLE) {
-        targetsensorState = FIRE_READY;
-      } else {
+      if (idlePossition == DEPRIMED_IDLE) {  // ready possition is 1,0: CLOSED_BREACH
+        run_motor();
+        if (!waitTillSensorChangeToValue(CLOSED_BREACH)) {
+          Serial.println("Error in blaster setup");
+        }        
+        stop_motor();
+      } else if (idlePossition == PRIMED_IDLE) { // ready possition is 1,1: FIRE_READY
+        Serial.println("blaster setup");
+        run_motor();
+        // there is a timing where the plunger isin the back possition before breach fully closes
+        int valid_states[2] = {FIRE_READY, PRIMED};  
+        if (!waitTillSensorChangeToValue(valid_states, 2)) {
+          Serial.println("Error in blaster setup");
+        }        
+        stop_motor();
+      } else {  // unknown idle possition
         Serial.println("invalid idle possition");
         return;
       }
-      if (currentSensorState != targetsensorState) {
-        run_motor();
-        waitTillSensorChangeToValueDebounce(targetsensorState);
-        stop_motor();
-      }
-      dev_write_serial_all_states();
-      blasterSetup = true;
+      blasterSetup = true;  // set flag
     } else if (currentTriggerState) { // deprime
+     static long triggerHoldTime = 0;  // Used for timeing how long the trigger has been held down
       if (triggerHoldTime == 0) {  // first time through after trigger pull
         if (triggerReleased) {
           Serial.println("starting trigger time");
@@ -79,7 +86,9 @@ void loop() {
         if ((millis() - triggerHoldTime) > 5000) {  // require 5 second hold to deprime
           if (currentSensorState != CLOSED_BREACH) {
             run_motor();
-            waitTillSensorChangeToValueDebounce(CLOSED_BREACH);
+            if (!waitTillSensorChangeToValue(CLOSED_BREACH)) {
+              Serial.println("Error in blaster setup");
+            }  
             stop_motor();
           }
           blasterSetup = false;
@@ -88,14 +97,17 @@ void loop() {
       }
     }
   } else if (currentTriggerState and triggerReleased) {  // fire next dart
+    // if blaster not set up pullingthe trigger will do a similar process
+    blasterSetup = true;  // set flag
     switch (selectedFireMode) {
       case SINGLE_FIRE:
         fire();
         triggerReleased = false;  // Require the trigger to be released
         break;
       case BURST_FIRE:
+        Serial.println("-------------------- starting burst --------------------");
         fire();
-        burstCount += 1;
+        burstCount += 1;  // increase fire count
         if (burstCount >= burstLimit) { // once burst limit has been reached
           triggerReleased = false; // Require the trigger to be released
         }
@@ -107,32 +119,39 @@ void loop() {
   } 
 }
 
+/*
+Fire the Blaster. This is responsable for managing fire rate limit
+*/
 void fire() {
   // default state machine to expected start location.
+  static unsigned long fireStart;
+  unsigned long fireStop;
   Serial.println("-------------------- Firing --------------------");
-  unsigned long fireStart = millis(); // start fire rate timmer   
+  fireStart = millis(); // start fire rate timmer   
   fireStateMachine(); // go through firing process
-  unsigned long fireStop = millis();  // stop fire timer
+  fireStop = millis();  // stop fire timer
   //               max fire rate - time firing
   int delaytime = (1000/maxDPS) - (fireStop - fireStart);
   Serial.println(delaytime);
-  if (delaytime < 10) { // if delay too low
-    delaytime = 10;
+  if (delaytime < 50) { // if delay too low
+    delaytime = 50;
   }
   delay(delaytime);
 }
 
+/*
+Runs through the firing process. This is blocking.
+*/
 void fireStateMachine() {
-  // TODO this is blocking. should it be? can this be improved. 
-  // issue could happen where user releases trigger during firing and pull again before completion. 
-  // Dart won't fire but user would expect it to.
-  sensorState startStopPossition;
+  static sensorState startStopPossition;
+  // get the expected startstop possition
   if (idlePossition == DEPRIMED_IDLE) {
     startStopPossition = CLOSED_BREACH;
   } else if (idlePossition == PRIMED_IDLE) {
     startStopPossition = FIRE_READY;
   }
-  nextState = LEAVING_STARTING_POSSITION;
+
+  nextState = LEAVING_STARTING_POSSITION;  // default state machine
   while(true) { // loop till firing complete.
     if (DEBUG_MODE) { // if debug print states
       update_sensor_state();
@@ -140,17 +159,19 @@ void fireStateMachine() {
     }
     switch (nextState) {
       case LEAVING_STARTING_POSSITION:
+      // mach sure the motor drives off the expected startstop possition
       {
+        // select next state based on what the idle mode is
         if (idlePossition == DEPRIMED_IDLE) {
           nextState = CYCLE_TO_DEPRIMED;
         } else if (idlePossition == PRIMED_IDLE) {
           nextState = CYCLE_TO_PRIMED;
-        } else {
+        } else {  // invalid idle possition
           nextState = ERROR_STATE;
           break;
         }
         run_motor();
-        if (!waitTillSensorChangeDebounce(startStopPossition)) { // make sure motor drives off of base possition
+        if (!waitTillSensorChange(startStopPossition)) { // make sure motor drives off of base possition
           Serial.println("Error from leaving start possition");
           nextState = ERROR_STATE;
           break;
@@ -158,27 +179,33 @@ void fireStateMachine() {
         break;
       }
       case CYCLE_TO_PRIMED:
+      // drives motor till system in in the FIRE_READY sensorState
       {
         run_motor();
+        // it is possible to have the plunger reach the back before chamber full closes
         int valid_states[2] = {FIRE_READY, PRIMED};
-        if (!waitTillSensorChangeToValueDebounce(valid_states, 2)) { // drive till end possition
+        if (!waitTillSensorChangeToValue(valid_states, 2)) { // drive till end possition
           Serial.println("Error from CYCLE_TO_PRIMED");
           nextState = ERROR_STATE;
           break;
         }
         stop_motor();
-         if (!waitTillSensorChangeToValueDebounce(FIRE_READY)) { // wait till fire ready
+        /*
+        // make sure breach is closed
+        if (!waitTillSensorChangeToValue(FIRE_READY)) { // wait till fire ready
           Serial.println("Error from CYCLE_TO_PRIMED waiting for fire ready");
           nextState = ERROR_STATE;
           break;
-        }
+        } */
+        delay(1);
         nextState = COMPLETE_STATE;
         break;
       }
       case CYCLE_TO_DEPRIMED:
+      // drives motor till system in in the CLOSED_BREACH sensorState
       {
         run_motor();
-        if (!waitTillSensorChangeToValueDebounce(CLOSED_BREACH)) { // drive till end possition
+        if (!waitTillSensorChangeToValue(CLOSED_BREACH)) { // drive till end possition
           Serial.println("Error from CYCLE_TO_DEPRIMED");
           nextState = ERROR_STATE;
           break;
@@ -189,11 +216,8 @@ void fireStateMachine() {
       }
       case COMPLETE_STATE:
       {
-        // clear firing related variables
+        // fireing complete
         stop_motor();
-        delay(100);  // here for debugging only TODO remove
-        update_sensor_state();
-        Serial.println(currentSensorState);
         return;
       }
       case ERROR_STATE:
@@ -211,6 +235,8 @@ void fireStateMachine() {
       }
       default:
       {
+        // should never happen
+        // TODO infor user
         stop_motor();
         return;
       }
@@ -218,13 +244,22 @@ void fireStateMachine() {
   }
 }
 
-bool waitTillSensorChangeDebounce(int initial_state) {
-  int list[3];
-  getAllSensorStatesBut(list, initial_state);
-  return waitTillSensorChangeToValueDebounce(list, 3);
+/* 
+Wrapper for waitTillSensorChangeToValue for when there is a sensor state to chacge out of.
+initial_state: valid sensorState to look for leave.
+*/
+bool waitTillSensorChange(int initial_state) {
+  static int list[3];
+  _getAllSensorStatesBut(list, initial_state);
+  return waitTillSensorChangeToValue(list, 3);
 }
 
-void getAllSensorStatesBut(int * list, int state){
+/*
+Support funtion for waitTillSensorChange. Gets a list of the valid sensorState except for one.
+*list: list to write into
+state:  valid sensorState to exclude
+*/
+void _getAllSensorStatesBut(int *list, int state){
   int i = 0;
   if (MID_CYCLE != state) {
     list[i] = MID_CYCLE;
@@ -244,38 +279,58 @@ void getAllSensorStatesBut(int * list, int state){
   }
 }
 
-bool waitTillSensorChangeToValueDebounce(int target_state) {
+/* 
+Wrapper for waitTillSensorChangeToValue for when there is only a single target sensor state
+target_state: valid sensorState to look for.
+*/
+bool waitTillSensorChangeToValue(int target_state) {
   int list[] = {target_state};
-  return waitTillSensorChangeToValueDebounce(list, 1);
+  return waitTillSensorChangeToValue(list, 1);
 }
 
-bool waitTillSensorChangeToValueDebounce(int target_states[], int length) {
+/*
+Reads the current sensor state and waits till one of the target states is reached. This function is blocking.
+target_states[]: list of valid sensorState to look for.
+length: length of target_states[].
+*/
+bool waitTillSensorChangeToValue(int target_states[], int length) {
   // blocking
-  unsigned long total_wait_time = millis(); // start timeout timer
-  unsigned long wait_debounce_time = micros(); // start time of debounce
+  static unsigned long total_wait_time;
+  static unsigned long wait_debounce_time;
+
+  total_wait_time = millis(); // start timeout timer
+  wait_debounce_time = micros(); // start time of debounce
 
   while (true) {
-    update_sensor_state();
+    update_sensor_state();  // get newest reading
 
-    if (!isValueInList(currentSensorState, target_states, length)) { // we want the target state
+    if (!isValueInList(currentSensorState, target_states, length)) { 
+      // if the currentSensorState is not in target_states
       wait_debounce_time = micros();  // reset the debouncing timer
     }
 
-    if ((micros() - wait_debounce_time) > 100) {
-      // whatever the reading is at, it's been there for longer than the debounce
-      // delay, so take it as the actual current state:
-      if (isValueInList(currentSensorState, target_states, length)) { // we want the target state
+    if ((micros() - wait_debounce_time) > 100) {  //uSec
+      // whatever the reading is at, it's been there for longer than the debounce delay
+      if (isValueInList(currentSensorState, target_states, length)) {
+        // if the currentSensorState is in target_states
         return true;
       }     
     }
-    if ((millis() - total_wait_time) > 300) { // 200mSec is one cycle time at 5 dps. should reduce.
+    if ((millis() - total_wait_time) > 300) { 
+      // if we have been in this loop for too long break
+      // 200mSec is one cycle time at 5 dps.
       return false;
     }
   }
-
   return false;
 }
 
+/*
+Goes through int[] and returns true if the value is in the list.
+value: the valuse to seach for.
+list[]: list to search.
+length: length of list.
+*/
 bool isValueInList(int value, int list[], int length) {
   for ( int i = 0; i < length; ++i ) {
     if (list[i] == value) {
@@ -285,11 +340,12 @@ bool isValueInList(int value, int list[], int length) {
   return false;
 }
 
-// motor function
+// Run motor at full speed
 void run_motor() {
   analogWrite(MOTOR_PIN, 255);
 }
 
+// Stop motor
 void stop_motor() {
   analogWrite(MOTOR_PIN, 0);
 }
