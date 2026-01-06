@@ -1,37 +1,11 @@
-#define BACK_SENSOR_PIN 4
-#define FRONT_SENSOR_PIN 3
+#include <Arduino.h>
 
-const float MPS2FSP = 3.28084;
+#include "Chrono.h"
+#include "MEDIC_Comms.h"
 
-enum states {
-  WAITING_FOR_INPUT,
-  WAITING_TO_EXIT,
-  CALCULATING
-};
-states current_state = WAITING_FOR_INPUT;
+const char version[16] = "V0.1";
 
-
-unsigned long enterTime_us;
-unsigned long exitTime_us;
-
-float distance_m = 90. / 1000.;  // mm to m
-bool useFPS = true;
-
-float lastMPS;
-float maxMPS = -1.;
-float minMPS = -1.;
-float previousMPS[100];
-int currentPreviousMPSIndex = 0;
-int currentRollingLength = 10;
-
-unsigned long fireTime_ms = 0;
-unsigned long lastFireTime_ms = 0;
-unsigned long timeoutDPS_ms = 10000;
-float maxDPS = -1.;
-const int DPSAverageLength = 5;  // this is -1 the number of darts thatneet to be fired to get the average
-unsigned long previousTimeBetweenShots[DPSAverageLength];
-int PreviousTimeBetweenShotsIndex = 0;
-
+MEDIC_CHRONO_RECEIVER communicator;
 
 void setup() {
   //start serial connection
@@ -43,6 +17,12 @@ void setup() {
   digitalWrite(FRONT_SENSOR_PIN, HIGH); // turn on the pullup
 
   pinMode(13, OUTPUT);
+
+  communicator = MEDIC_CHRONO_RECEIVER();
+  communicator.connectOnRequestIdentifyFunction(fillIdentifier);
+  communicator.connectOnRequestSettingsFunction(fillSettings);
+  communicator.connectOnRequestStatusFunction(fillStatus);
+  communicator.begin();
 }
 
 void loop() {
@@ -184,4 +164,29 @@ void printStats() {
   Serial.print(maxDPS);
 
   Serial.println("");
+}
+
+void fillStatus() {
+  float unitAdjuster;
+  if (useFPS) {
+    unitAdjuster = MPS2FSP;
+  } else {
+    unitAdjuster = 1;
+  }
+  communicator.statusStruct.lastFPS = lastMPS * unitAdjuster;
+  communicator.statusStruct.maxFPS = maxMPS * unitAdjuster;
+  communicator.statusStruct.minFPS = minMPS * unitAdjuster;
+  communicator.statusStruct.maxDPS = maxDPS;
+  communicator.statusStruct.lastDPS = -1;  // TODO implemet
+}
+
+void fillIdentifier() {
+  strcpy(communicator.identifyStruct.version, version);
+}
+
+void fillSettings() {
+  communicator.settingStruct.DPSAverageLength = DPSAverageLength;
+  communicator.settingStruct.MPSRollingLength = currentRollingLength;
+  communicator.settingStruct.timeoutDPS_ms = timeoutDPS_ms;
+  communicator.settingStruct.useFPS = useFPS;
 }

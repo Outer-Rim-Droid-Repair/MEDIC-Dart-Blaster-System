@@ -1,4 +1,3 @@
-#include "pins_arduino.h"
 // input pins
 #define TRIGGER_PIN_NUMBER 19
 #define BREACH_PIN_NUMBER 18
@@ -71,3 +70,21 @@ idleMode idlePossition = PRIMED_IDLE;             // where should the firing cyc
 int burstLimit = 3;                               // How many darts in a burst fire.
 // Could make this a by mode option. i.e. user could select burst 2 and burst 4 as their fire modes
 int maxDPS = 5;                                  // limit on number of darts per second
+
+
+// functions
+void fire();
+void fireStateMachine();
+bool waitTillSensorChange(int initial_state);
+void _getAllSensorStatesBut(int *list, int state);
+bool waitTillSensorChangeToValue(int target_state);
+bool waitTillSensorChangeToValue(int target_states[], int length);
+bool isValueInList(int value, int list[], int length);
+void run_motor();
+void stop_motor();
+void update_sensor_state();
+void update_trigger_state();
+void update_safety_state();
+void update_fire_mode();
+
+void dev_write_serial_all_states();

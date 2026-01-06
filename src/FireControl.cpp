@@ -1,15 +1,14 @@
-#include <SPI.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_ILI9341.h>
-#include <Adafruit_STMPE610.h>
-#include "DigitalIO.h"
+#include <Arduino.h>
+#include <DigitalIO.h>
 
-#include "Parameters.h"
+#include "FireControl.h"
 
 // quick accesses settings
 #define DEBUG_MODE true
 
 void setup() {
+    
+
   // inputs
   tiggerPin.mode(INPUT_PULLUP);
   breachPin.mode(INPUT_PULLUP);
@@ -351,3 +350,71 @@ void run_motor() {
 void stop_motor() {
   analogWrite(MOTOR_PIN, 0);
 }
+
+/*
+Get internal switch reading and set it to currentSensorState. 
+Use sensorState enum to access by name. 
+format: BREACH_PIN,PLUNGER_PIN
+*/
+void update_sensor_state() {
+  currentSensorState = 2 * (!breachPin) + (!plungerPin);
+}
+
+/*
+Get the current trigger state and sets it to currentTriggerState. 
+Uses none blocking debounced to prevent doble fires when trigger is released.
+*/
+void update_trigger_state() {
+  const unsigned long triggerDebounceTime = 2;
+  static unsigned long lastTriggerDebounce = 0;
+  int reading = !tiggerPin;
+  if (reading != lastTriggerState) {
+    lastTriggerDebounce = millis();
+    lastTriggerState = reading;
+  }
+  if ((millis() - lastTriggerDebounce) > triggerDebounceTime) {
+    lastTriggerState = currentTriggerState;
+    currentTriggerState = reading;
+  }
+}
+
+/*
+Get safty switch state and sets it to safetyState.
+*/
+void update_safety_state() {
+  safetyState = safetyPin;
+}
+
+/*
+Get fire mode option fromthe selector switch and sets it to selectedFireMode.
+Use fireMode enum to access by name. 
+*/
+void update_fire_mode() {
+  // TODO update with selecting fire mode from a user selected array
+  if (!FireModePin1) {  // first possition
+    selectedFireMode = SINGLE_FIRE;
+  } else if (!FireModePin2) { // third possition
+    selectedFireMode = AUTO_FIRE;
+  } else {  // second possition
+    selectedFireMode = BURST_FIRE;
+  }
+}
+
+void dev_write_serial_all_states() {
+  /* Write variables to serial port */
+  Serial.print("System State: ");
+  Serial.print("    Safety: ");
+  Serial.print(safetyState);
+  Serial.print("    Trigger: ");
+  Serial.print(currentTriggerState);
+  Serial.print("    Fire Mode: ");
+  Serial.print(fireModeStr[selectedFireMode]);
+  Serial.print("    Loading State: ");
+  Serial.print(currentSensorState);
+  Serial.print(": ");
+  Serial.print(sensorStateStr[currentSensorState]);
+  Serial.print("    State: ");
+  Serial.print(stateMachineStr[nextState]);
+  Serial.println("");
+}
+
