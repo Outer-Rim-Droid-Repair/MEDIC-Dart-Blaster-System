@@ -390,14 +390,17 @@ Get fire mode option fromthe selector switch and sets it to selectedFireMode.
 Use fireMode enum to access by name. 
 */
 void update_fire_mode() {
+  int index;
   // TODO update with selecting fire mode from a user selected array
   if (!FireModePin1) {  // first possition
-    selectedFireMode = SINGLE_FIRE;
+    index = 0;
   } else if (!FireModePin2) { // third possition
-    selectedFireMode = AUTO_FIRE;
+    index = 2;
   } else {  // second possition
-    selectedFireMode = BURST_FIRE;
+    index = 1;
   }
+  selectedFireMode = currentFireModes[index].mode;
+  burstLimit = currentFireModes[index].burstCount;
 }
 
 void dev_write_serial_all_states() {

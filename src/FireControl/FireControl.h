@@ -7,12 +7,6 @@
 #define FIRE_SELECT_PIN_2_NUMBER 22
 // output pins
 #define MOTOR_PIN 11
-// LCD Pins
-// curently not used but reserved if needed
-#define STMPE_CS 6
-#define TFT_CS   9
-#define TFT_DC   10
-#define SD_CS    5
 
 // input high speed pins
 DigitalPin<TRIGGER_PIN_NUMBER> tiggerPin;
@@ -30,6 +24,16 @@ enum fireMode // valid firemodes
   AUTO_FIRE  // Fire untill trigger released
 };
 const char* fireModeStr[] = {"Single Fire", "Burst Fire", "Full Auto"};
+
+struct fireModeSetup {
+  fireMode mode;
+  int burstCount;
+};
+
+fireModeSetup singleFireMode = fireModeSetup{SINGLE_FIRE, 1};
+fireModeSetup burstFireMode = fireModeSetup{BURST_FIRE, 31};
+fireModeSetup fullAutoMode = fireModeSetup{AUTO_FIRE, -1};
+fireModeSetup currentFireModes[3] = {singleFireMode, burstFireMode, fullAutoMode};
 
 enum sensorState   // Internal fire sensors
 {                  // BREACH_PIN,PLUNGER_PIN
@@ -62,7 +66,7 @@ volatile int currentTriggerState = LOW;           // Is the trigger pulled? High
 int lastTriggerState = LOW;                       // History of currentTriggerState 
 volatile int currentSensorState = CLOSED_BREACH;  // Internal fire sensors read. Default to CLOSED_BREACH as this should be power down state
 volatile int safetyState = LOW;                   // Is the Safty Enabled? High: Enabled, LOW: Disabled  
-volatile fireMode selectedFireMode = SINGLE_FIRE; // User selected fire mode. TODO allow a user selected array of fire modes
+volatile fireMode selectedFireMode;               // User selected fire mode. filled based on currentFireModes  // TODO many of these names blend together too much
 states nextState;                                 // Firing State machine state. 
 
 // User controlled settings.
