@@ -221,6 +221,7 @@ void MEDIC_CHRONO_RECEIVER::onReceiveHandler(int numBytesReceived) {
 }
 
 void MEDIC_CHRONO_RECEIVER::onRequestHandler() {
+	// TODO add heart beat
 	if (_currentMode == STATUS){
 		statusStruct = chronoStatusStruct();
 		_onRequestStatusFunction();

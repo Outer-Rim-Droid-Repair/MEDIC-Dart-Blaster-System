@@ -2,13 +2,16 @@
 #include <DigitalIO.h>
 
 #include "FireControl.h"
+#include "MEDIC_Comms.h"
+
+const char version[16] = "V0.1";
+
+MEDIC_FIRE_CONTROL_RECEIVER communicator;
 
 // quick accesses settings
 #define DEBUG_MODE true
 
 void setup() {
-    
-
   // inputs
   tiggerPin.mode(INPUT_PULLUP);
   breachPin.mode(INPUT_PULLUP);
@@ -22,6 +25,12 @@ void setup() {
   stop_motor(); // turn off motor on boot
 
   Serial.begin(9600); // initialize serial communication:
+
+  communicator = MEDIC_FIRE_CONTROL_RECEIVER();
+  communicator.connectOnRequestIdentifyFunction(fillIdentifier);
+  communicator.connectOnRequestSettingsFunction(fillSettings);
+  communicator.connectOnRequestStatusFunction(fillStatus);
+  communicator.begin();
 }
 
 void loop() {
@@ -100,16 +109,15 @@ void loop() {
   } else if (currentTriggerState and triggerReleased) {  // fire next dart
     // if blaster not set up pullingthe trigger will do a similar process
     blasterSetup = true;  // set flag
-    switch (selectedFireMode) {
+    switch (selectableFireModes[selectedFireMode]) {
       case SINGLE_FIRE:
         fire();
         triggerReleased = false;  // Require the trigger to be released
         break;
       case BURST_FIRE:
-        Serial.println("-------------------- starting burst --------------------");
         fire();
         burstCount += 1;  // increase fire count
-        if (burstCount >= burstLimit) { // once burst limit has been reached
+        if (burstCount >= selectableBurstAmount[selectedFireMode]) { // once burst limit has been reached
           triggerReleased = false; // Require the trigger to be released
         }
         break;
@@ -390,18 +398,38 @@ Get fire mode option fromthe selector switch and sets it to selectedFireMode.
 Use fireMode enum to access by name. 
 */
 void update_fire_mode() {
-  int index;
   // TODO update with selecting fire mode from a user selected array
   if (!FireModePin1) {  // first possition
-    index = 0;
+    selectedFireMode = 0;
   } else if (!FireModePin2) { // third possition
-    index = 2;
+    selectedFireMode = 2;
   } else {  // second possition
-    index = 1;
+    selectedFireMode = 1;
   }
-  selectedFireMode = currentFireModes[index].mode;
-  burstLimit = currentFireModes[index].burstCount;
 }
+
+void fillStatus() {
+  communicator.statusStruct.FireMode = selectableFireModes[selectedFireMode];
+  communicator.statusStruct.BurstAmount = selectableBurstAmount[selectedFireMode];
+  communicator.statusStruct.safteyState = safetyState;
+  communicator.statusStruct.triggerState = currentTriggerState;
+}
+
+void fillIdentifier() {
+  strcpy(communicator.identifyStruct.version, version);
+}
+
+void fillSettings() {
+  unsigned int modes[3];
+  for (unsigned int i = 0; i < 3; i++){
+    modes[i] = (unsigned int) selectableFireModes;
+  }
+  memcpy(&communicator.settingStruct.selectableFireModes, &modes[0], sizeof(communicator.settingStruct.selectableFireModes));
+  memcpy(&communicator.settingStruct.selectableBurstAmounts, &selectableBurstAmount[0], sizeof(communicator.settingStruct.selectableBurstAmounts));
+  communicator.settingStruct.maxFireRate = maxDPS;
+  communicator.settingStruct.idlePossition = (int) idlePossition;
+}
+
 
 void dev_write_serial_all_states() {
   /* Write variables to serial port */
@@ -411,7 +439,7 @@ void dev_write_serial_all_states() {
   Serial.print("    Trigger: ");
   Serial.print(currentTriggerState);
   Serial.print("    Fire Mode: ");
-  Serial.print(fireModeStr[selectedFireMode]);
+  Serial.print(fireModeStr[selectableFireModes[selectedFireMode]]);
   Serial.print("    Loading State: ");
   Serial.print(currentSensorState);
   Serial.print(": ");

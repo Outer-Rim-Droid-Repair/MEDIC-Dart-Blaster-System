@@ -1,14 +1,17 @@
+#ifndef CHRONO_h
+#define CHRONO_h
+
 #define BACK_SENSOR_PIN 4
 #define FRONT_SENSOR_PIN 3
 
 const float MPS2FSP = 3.28084;
 
-enum states {
+enum chronoStates {
   WAITING_FOR_INPUT,
   WAITING_TO_EXIT,
   CALCULATING
 };
-states current_state = WAITING_FOR_INPUT;
+chronoStates current_state = WAITING_FOR_INPUT;
 
 
 unsigned long enterTime_us;
@@ -44,3 +47,5 @@ void printStats();
 void fillStatus();
 void fillIdentifier();
 void fillSettings();
+
+#endif

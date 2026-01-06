@@ -7,6 +7,9 @@ const char version[16] = "V0.1";
 
 MEDIC_CHRONO_RECEIVER communicator;
 
+// TODO add shot counter and add single beam mode to make smaller modular for just shot count/DPS
+// TODO add stand alone with screen mode
+
 void setup() {
   //start serial connection
   Serial.begin(9600);

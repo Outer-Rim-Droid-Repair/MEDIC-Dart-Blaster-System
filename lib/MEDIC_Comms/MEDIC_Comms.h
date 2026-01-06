@@ -4,6 +4,7 @@
 #include "Arduino.h"
 #include "Wire.h"
 
+
 const byte CONTROLLER_ADDRESS = 8;
 const byte POWER_DISTRO_BOARD_ADDRESS = 9;
 const byte FIRE_CONTROL_BOARD_ADDRESS = 10;
@@ -44,18 +45,23 @@ struct PowerBoardSettingsStruct {
 struct fireControlStatusStruct {
 	int safteyState;        //  2
 	int triggerState;       //  2
-	int currentFireMode;    //  2
+	int FireMode; 			//  2
+	int BurstAmount;		//  2
 	bool heartbeat;			//  1
-	byte padding[25];       // 25
+	byte padding[7];       	//  7
 	//------
-	// total                // 32
+	// total                // 16
 };
 
 struct fireControlSettingsStruct {  // TODO figure out how to handdle changin possitional settings
-	bool heartbeat;			//  1
-	byte padding[7];      	//  7
-  	//------
-  	// total                // 8
+	int maxFireRate;			//  2
+	int selectableFireModes[3]; //  6
+	int selectableBurstAmounts[3];// 6
+	int idlePossition;			//  2  // TODO figure out how to not have that as a raw int
+	bool heartbeat;				//  1  // TODO reorder based on size
+	byte padding[1];      		//  1
+  								//------
+  	// total                	//  16
 };
 
 struct chronoStatusStruct {
