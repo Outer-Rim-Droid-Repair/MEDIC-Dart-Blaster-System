@@ -420,6 +420,7 @@ void fillIdentifier() {
 }
 
 void fillSettings() {
+  // convert firemode to int this shouldgetchanged back. see TODO in MEDIC_Comms
   unsigned int modes[3];
   for (unsigned int i = 0; i < 3; i++){
     modes[i] = (unsigned int) selectableFireModes;

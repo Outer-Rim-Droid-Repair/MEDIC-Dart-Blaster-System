@@ -29,8 +29,7 @@ void MEDIC::begin() {
 
 /* ---------------- MEDIC_CONNTROLLER ---------------- */
 
-MEDIC_CONNTROLLER::MEDIC_CONNTROLLER(): MEDIC(CONTROLLER_ADDRESS) {
-}
+MEDIC_CONNTROLLER::MEDIC_CONNTROLLER(): MEDIC(CONTROLLER_ADDRESS) {}
 
 // set target device to a response mode
 bool MEDIC_CONNTROLLER::SetUnitToMode(int targetAddress, mode selectedMode) {
@@ -175,14 +174,17 @@ void MEDIC_POWER_BOARD_RECEIVER::onReceiveHandler(int numBytesReceived) {
 void MEDIC_POWER_BOARD_RECEIVER::onRequestHandler() {
 	if (_currentMode == STATUS){
 		statusStruct = PowerBoardStatusStruct();
+		statusStruct.heartbeat = true;
 		_onRequestStatusFunction();
 		Wire.write((byte*) &statusStruct, sizeof(statusStruct));  // send data
 	} else if (_currentMode == IDENTIFY) {
 		identifyStruct = IdentifyStatusStruct();
+		identifyStruct.heartbeat = true;
 		_onRequestIdentifyFunction();
 		Wire.write((byte*) &identifyStruct, sizeof(identifyStruct));  // send data
 	} else if (_currentMode == SETTINGS) {
 		settingStruct = PowerBoardSettingsStruct();
+		settingStruct.heartbeat = true;
 		_onRequestSettingsFunction();
 		Wire.write((byte*) &settingStruct, sizeof(settingStruct));  // send data
 	} else { // invalid _currentMode
@@ -199,14 +201,17 @@ void MEDIC_FIRE_CONTROL_RECEIVER::onReceiveHandler(int numBytesReceived) {
 void MEDIC_FIRE_CONTROL_RECEIVER::onRequestHandler() {
 	if (_currentMode == STATUS){
 		statusStruct = fireControlStatusStruct();
+		statusStruct.heartbeat = true;
 		_onRequestStatusFunction();
 		Wire.write((byte*) &statusStruct, sizeof(statusStruct));  // send data
 	} else if (_currentMode == IDENTIFY) {
 		identifyStruct = IdentifyStatusStruct();
+		identifyStruct.heartbeat = true;
 		_onRequestIdentifyFunction();
 		Wire.write((byte*) &identifyStruct, sizeof(identifyStruct));  // send data
 	} else if (_currentMode == SETTINGS) {
 		settingStruct = fireControlSettingsStruct();
+		settingStruct.heartbeat = true;
 		_onRequestSettingsFunction();
 		Wire.write((byte*) &settingStruct, sizeof(settingStruct));  // send data
 	} else { // invalid _currentMode
@@ -224,14 +229,17 @@ void MEDIC_CHRONO_RECEIVER::onRequestHandler() {
 	// TODO add heart beat
 	if (_currentMode == STATUS){
 		statusStruct = chronoStatusStruct();
+		statusStruct.heartbeat = true;
 		_onRequestStatusFunction();
 		Wire.write((byte*) &statusStruct, sizeof(statusStruct));  // send data
 	} else if (_currentMode == IDENTIFY) {
 		identifyStruct = IdentifyStatusStruct();
+		identifyStruct.heartbeat = true;
 		_onRequestIdentifyFunction();
 		Wire.write((byte*) &identifyStruct, sizeof(identifyStruct));  // send data
 	} else if (_currentMode == SETTINGS) {
 		settingStruct = chronoSettingsStruct();
+		settingStruct.heartbeat = true;
 		_onRequestSettingsFunction();
 		Wire.write((byte*) &settingStruct, sizeof(settingStruct));  // send data
 	} else { // invalid _currentMode
