@@ -22,9 +22,9 @@ void setup() {
   pinMode(13, OUTPUT);
 
   communicator = MEDIC_CHRONO_RECEIVER();
-  communicator.connectSetSettingFunction(setSettings);
   communicator.connectOnRequestIdentifyFunction(fillIdentifier);
   communicator.connectOnRequestSettingsFunction(fillSettings);
+  communicator.connectSetSettingFunction(setSettings);
   communicator.connectOnRequestStatusFunction(fillStatus);
   communicator.begin();
 }

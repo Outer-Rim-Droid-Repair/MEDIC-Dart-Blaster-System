@@ -101,9 +101,26 @@ void MEDIC_CONNTROLLER::requestChronoSettings() {
 	Wire.readBytes( (byte*) &chronoSettings, numBytes); // read chronoSettings
 }
 
-void MEDIC_CONNTROLLER::setPowerSettings() {}
-void MEDIC_CONNTROLLER::setFireControlSettings() {}
-void MEDIC_CONNTROLLER::setChronoSettings() {}
+void MEDIC_CONNTROLLER::setPowerSettings() {
+	SetUnitToMode(POWER_DISTRO_BOARD_ADDRESS, SET_SETTINGS); // set to the given type
+	Wire.beginTransmission(POWER_DISTRO_BOARD_ADDRESS);
+	Wire.write((byte*) &powerBoardSettings, sizeof(powerBoardSettings));
+	Wire.endTransmission();
+}
+
+void MEDIC_CONNTROLLER::setFireControlSettings() {
+	SetUnitToMode(FIRE_CONTROL_BOARD_ADDRESS, SET_SETTINGS); // set to the given type
+	Wire.beginTransmission(FIRE_CONTROL_BOARD_ADDRESS);
+	Wire.write((byte*) &fireControlSettings, sizeof(fireControlSettings));
+	Wire.endTransmission();
+}
+
+void MEDIC_CONNTROLLER::setChronoSettings() {
+	SetUnitToMode(CHRONO_BOARD_ADDRESS, SET_SETTINGS); // set to the given type
+	Wire.beginTransmission(CHRONO_BOARD_ADDRESS);
+	Wire.write((byte*) &chronoSettings, sizeof(chronoSettings));
+	Wire.endTransmission();
+}
 
 
 
