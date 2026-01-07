@@ -91,7 +91,8 @@ struct chronoSettingsStruct {
 enum mode {
 	IDENTIFY,	// to check if a device is in the network
 	STATUS,		// to get a status form the device
-	SETTINGS	// to setup the device
+	GET_SETTINGS,	// to get the settings from the module
+	SET_SETTINGS	// to put the unit in a mode to accept new settings
 };
 
 struct SendMessageStruct {
@@ -121,7 +122,7 @@ class MEDIC_CONNTROLLER: public MEDIC {
   public:
 	MEDIC_CONNTROLLER();
 	bool checkDeviceInSystem(byte address);
-	bool SetUnitToMode(int targetAddress, mode selectedMode);
+	void SetUnitToMode(int targetAddress, mode selectedMode);
 	
 	void requestIdentifyStatus(byte address);
     void requestPowerStatus();
@@ -155,6 +156,8 @@ class MEDIC_RECEIVER: public MEDIC {
 		MEDIC_RECEIVER(int address);
 		void begin();
 	
+		void connectSetSettingFunction(void (*funct)());
+
 		void connectOnRequestStatusFunction(void (*funct)());
 		void connectOnRequestIdentifyFunction(void (*funct)());
 		void connectOnRequestSettingsFunction(void (*funct)());
@@ -165,6 +168,8 @@ class MEDIC_RECEIVER: public MEDIC {
 		IdentifyStatusStruct identifyStruct;
 	protected:
 		mode _currentMode;
+
+		void(*_onSetSettingsFunction)();
 		
 		void(*_onRequestStatusFunction)();
 		void(*_onRequestIdentifyFunction)();

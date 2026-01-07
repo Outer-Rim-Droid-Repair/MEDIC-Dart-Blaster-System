@@ -56,6 +56,7 @@ void update_fire_mode();
 
 void fillStatus();
 void fillIdentifier();
+void setSettings();
 void fillSettings();
 
 void dev_write_serial_all_states();

@@ -29,6 +29,7 @@ void setup() {
   communicator = MEDIC_FIRE_CONTROL_RECEIVER();
   communicator.connectOnRequestIdentifyFunction(fillIdentifier);
   communicator.connectOnRequestSettingsFunction(fillSettings);
+  communicator.connectSetSettingFunction(setSettings);
   communicator.connectOnRequestStatusFunction(fillStatus);
   communicator.begin();
 }
@@ -419,8 +420,15 @@ void fillIdentifier() {
   strcpy(communicator.identifyStruct.version, version);
 }
 
+void setSettings() {
+  memcpy(&selectableFireModes, &communicator.settingStruct.selectableFireModes[0], sizeof(selectableFireModes));
+  memcpy(&selectableBurstAmount, &communicator.settingStruct.selectableFireModes[0], sizeof(selectableBurstAmount));
+  maxDPS = communicator.settingStruct.maxFireRate;
+  idlePossition = (idleMode) communicator.settingStruct.idlePossition;
+}
+
 void fillSettings() {
-  // convert firemode to int this shouldgetchanged back. see TODO in MEDIC_Comms
+  // convert firemode to int this should get changed back. see TODO in MEDIC_Comms
   unsigned int modes[3];
   for (unsigned int i = 0; i < 3; i++){
     modes[i] = (unsigned int) selectableFireModes;

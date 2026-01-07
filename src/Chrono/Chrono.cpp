@@ -22,6 +22,7 @@ void setup() {
   pinMode(13, OUTPUT);
 
   communicator = MEDIC_CHRONO_RECEIVER();
+  communicator.connectSetSettingFunction(setSettings);
   communicator.connectOnRequestIdentifyFunction(fillIdentifier);
   communicator.connectOnRequestSettingsFunction(fillSettings);
   communicator.connectOnRequestStatusFunction(fillStatus);
@@ -73,7 +74,6 @@ void loop() {
           calculateDPS();
           resetDPSReconrds();
         } else {
-                    Serial.println(PreviousTimeBetweenShotsIndex);
           previousTimeBetweenShots[PreviousTimeBetweenShotsIndex] = fireTime_ms - lastFireTime_ms;
           PreviousTimeBetweenShotsIndex++;
 
@@ -185,6 +185,13 @@ void fillStatus() {
 
 void fillIdentifier() {
   strcpy(communicator.identifyStruct.version, version);
+}
+
+void setSettings() {
+  DPSAverageLength = communicator.settingStruct.DPSAverageLength;
+  currentRollingLength = communicator.settingStruct.MPSRollingLength;
+  timeoutDPS_ms = communicator.settingStruct.timeoutDPS_ms;
+  useFPS = communicator.settingStruct.useFPS;
 }
 
 void fillSettings() {

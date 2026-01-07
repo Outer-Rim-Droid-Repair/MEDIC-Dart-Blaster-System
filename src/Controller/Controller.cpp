@@ -57,6 +57,7 @@ void testdrawroundrect(void) {
   }
 }
 
+
 void drawNetworkScreen(void) {
   display.setTextSize(1);             // Normal 1:1 pixel scale
   display.setTextColor(SSD1306_WHITE);        // Draw white text

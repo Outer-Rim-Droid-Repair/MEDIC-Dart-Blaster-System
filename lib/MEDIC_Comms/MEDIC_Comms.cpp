@@ -32,15 +32,13 @@ void MEDIC::begin() {
 MEDIC_CONNTROLLER::MEDIC_CONNTROLLER(): MEDIC(CONTROLLER_ADDRESS) {}
 
 // set target device to a response mode
-bool MEDIC_CONNTROLLER::SetUnitToMode(int targetAddress, mode selectedMode) {
+void MEDIC_CONNTROLLER::SetUnitToMode(int targetAddress, mode selectedMode) {
 	static SendMessageStruct modeBlock;
 	modeBlock.targetMode = selectedMode;
 	
 	Wire.beginTransmission(targetAddress);
 	Wire.write((byte*) &modeBlock, sizeof(modeBlock));
 	Wire.endTransmission();
-	
-	return true;
 }
 
 // get IdentifyStatusStruct from target device
@@ -83,7 +81,7 @@ void MEDIC_CONNTROLLER::requestPowerSettings() {
 	powerBoardSettings = PowerBoardSettingsStruct(); // clear powerBoardSettings struct
 	byte numBytes = sizeof(powerBoardSettings); // get size
 	// request the data be send. returns false if not a valid sender
-	_request(POWER_DISTRO_BOARD_ADDRESS, numBytes, SETTINGS);
+	_request(POWER_DISTRO_BOARD_ADDRESS, numBytes, GET_SETTINGS);
 	Wire.readBytes( (byte*) &powerBoardSettings, numBytes); // read powerBoardSettings
 }
 
@@ -91,7 +89,7 @@ void MEDIC_CONNTROLLER::requestFireControlSettings() {
 	fireControlSettings = fireControlSettingsStruct(); // clear fireControlSettings struct
 	byte numBytes = sizeof(fireControlSettings); // get size
 	// request the data be send. returns false if not a valid sender
-	_request(FIRE_CONTROL_BOARD_ADDRESS, numBytes, SETTINGS);
+	_request(FIRE_CONTROL_BOARD_ADDRESS, numBytes, GET_SETTINGS);
 	Wire.readBytes( (byte*) &fireControlSettings, numBytes); // read fireControlSettings
 }
 
@@ -99,7 +97,7 @@ void MEDIC_CONNTROLLER::requestChronoSettings() {
 	chronoSettings = chronoSettingsStruct(); // clear chronoSettings struct
 	byte numBytes = sizeof(chronoSettings); // get size
 	// request the data be send. returns false if not a valid sender
-	_request(CHRONO_BOARD_ADDRESS, numBytes, SETTINGS);
+	_request(CHRONO_BOARD_ADDRESS, numBytes, GET_SETTINGS);
 	Wire.readBytes( (byte*) &chronoSettings, numBytes); // read chronoSettings
 }
 
@@ -140,6 +138,12 @@ void MEDIC_RECEIVER::begin() {
 	Wire.onRequest(staticOnRequestHandler);
 }
 
+
+void MEDIC_RECEIVER::connectSetSettingFunction(void (*funct)()) {
+	_onSetSettingsFunction = funct;
+}
+
+
 // add a function to call if a status request is made
 void MEDIC_RECEIVER::connectOnRequestStatusFunction(void (*funct)()) {	
 	_onRequestStatusFunction = funct;
@@ -167,8 +171,14 @@ void MEDIC_RECEIVER::onRequestHandler() {
 
 // --------------------------------
 void MEDIC_POWER_BOARD_RECEIVER::onReceiveHandler(int numBytesReceived) {
-	Wire.readBytes( (byte*) &recivedData, numBytesReceived);
-	_currentMode = recivedData.targetMode;
+	if (_currentMode != SET_SETTINGS) {
+		Wire.readBytes( (byte*) &recivedData, numBytesReceived);
+		_currentMode = recivedData.targetMode;
+	} else {  // in SET_SETTINGS
+		_currentMode = IDENTIFY;  // set to a different mode to leave set mode
+		Wire.readBytes( (byte*) &settingStruct, numBytesReceived);
+		_onSetSettingsFunction();
+	}
 }
 
 void MEDIC_POWER_BOARD_RECEIVER::onRequestHandler() {
@@ -182,7 +192,7 @@ void MEDIC_POWER_BOARD_RECEIVER::onRequestHandler() {
 		identifyStruct.heartbeat = true;
 		_onRequestIdentifyFunction();
 		Wire.write((byte*) &identifyStruct, sizeof(identifyStruct));  // send data
-	} else if (_currentMode == SETTINGS) {
+	} else if (_currentMode == GET_SETTINGS) {
 		settingStruct = PowerBoardSettingsStruct();
 		settingStruct.heartbeat = true;
 		_onRequestSettingsFunction();
@@ -194,8 +204,14 @@ void MEDIC_POWER_BOARD_RECEIVER::onRequestHandler() {
 
 // --------------------------------
 void MEDIC_FIRE_CONTROL_RECEIVER::onReceiveHandler(int numBytesReceived) {
-	Wire.readBytes( (byte*) &recivedData, numBytesReceived);
-	_currentMode = recivedData.targetMode;
+	if (_currentMode != SET_SETTINGS) {
+		Wire.readBytes( (byte*) &recivedData, numBytesReceived);
+		_currentMode = recivedData.targetMode;
+	} else {  // in SET_SETTINGS
+		_currentMode = IDENTIFY;  // set to a different mode to leave set mode
+		Wire.readBytes( (byte*) &settingStruct, numBytesReceived);
+		_onSetSettingsFunction();
+	}
 }
 
 void MEDIC_FIRE_CONTROL_RECEIVER::onRequestHandler() {
@@ -209,7 +225,7 @@ void MEDIC_FIRE_CONTROL_RECEIVER::onRequestHandler() {
 		identifyStruct.heartbeat = true;
 		_onRequestIdentifyFunction();
 		Wire.write((byte*) &identifyStruct, sizeof(identifyStruct));  // send data
-	} else if (_currentMode == SETTINGS) {
+	} else if (_currentMode == GET_SETTINGS) {
 		settingStruct = fireControlSettingsStruct();
 		settingStruct.heartbeat = true;
 		_onRequestSettingsFunction();
@@ -221,12 +237,17 @@ void MEDIC_FIRE_CONTROL_RECEIVER::onRequestHandler() {
 
 // --------------------------------
 void MEDIC_CHRONO_RECEIVER::onReceiveHandler(int numBytesReceived) {
-	Wire.readBytes( (byte*) &recivedData, numBytesReceived);
-	_currentMode = recivedData.targetMode;
+	if (_currentMode != SET_SETTINGS) {
+		Wire.readBytes( (byte*) &recivedData, numBytesReceived);
+		_currentMode = recivedData.targetMode;
+	} else {  // in SET_SETTINGS
+		_currentMode = IDENTIFY;  // set to a different mode to leave set mode
+		Wire.readBytes( (byte*) &settingStruct, numBytesReceived);
+		_onSetSettingsFunction();
+	}
 }
 
 void MEDIC_CHRONO_RECEIVER::onRequestHandler() {
-	// TODO add heart beat
 	if (_currentMode == STATUS){
 		statusStruct = chronoStatusStruct();
 		statusStruct.heartbeat = true;
@@ -237,7 +258,7 @@ void MEDIC_CHRONO_RECEIVER::onRequestHandler() {
 		identifyStruct.heartbeat = true;
 		_onRequestIdentifyFunction();
 		Wire.write((byte*) &identifyStruct, sizeof(identifyStruct));  // send data
-	} else if (_currentMode == SETTINGS) {
+	} else if (_currentMode == GET_SETTINGS) {
 		settingStruct = chronoSettingsStruct();
 		settingStruct.heartbeat = true;
 		_onRequestSettingsFunction();
