@@ -3,7 +3,7 @@
 #include "Chrono.h"
 #include "MEDIC_Comms.h"
 
-const char version[16] = "V0.1";
+const char version[6] = "V0.1";
 
 MEDIC_CHRONO_RECEIVER communicator;
 

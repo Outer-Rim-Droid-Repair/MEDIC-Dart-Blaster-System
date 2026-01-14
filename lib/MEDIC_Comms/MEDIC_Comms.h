@@ -12,9 +12,9 @@ const byte CHRONO_BOARD_ADDRESS = 11;
 
 
 struct IdentifyStatusStruct {
-	char version[16];		// 16
+	char version[6];		//  6
 	bool heartbeat;			//  1
-	byte padding[16];		// 15
+	byte padding[25];		// 25
                             //------
     // total                // 32
 };
