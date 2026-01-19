@@ -123,6 +123,7 @@ float calculateDPS() {
   if (dps > maxDPS or maxDPS < 0) {
     maxDPS = dps;
   } 
+  lastDPS = dps;
   return dps;
 }
 
@@ -179,7 +180,7 @@ void fillStatus() {
   communicator.statusStruct.maxFPS = maxMPS * unitAdjuster;
   communicator.statusStruct.minFPS = minMPS * unitAdjuster;
   communicator.statusStruct.maxDPS = maxDPS;
-  communicator.statusStruct.lastDPS = -1;  // TODO implemet
+  communicator.statusStruct.lastDPS = lastDPS;
 }
 
 void fillIdentifier() {

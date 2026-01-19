@@ -31,6 +31,7 @@ unsigned long fireTime_ms = 0;
 unsigned long lastFireTime_ms = 0;
 unsigned long timeoutDPS_ms = 1000;
 float maxDPS = -1.;
+float lastDPS = -1.;
 int DPSAverageLength = 5;  // this is -1 the number of darts thatneet to be fired to get the average
 unsigned long previousTimeBetweenShots[20];
 int PreviousTimeBetweenShotsIndex = 0;

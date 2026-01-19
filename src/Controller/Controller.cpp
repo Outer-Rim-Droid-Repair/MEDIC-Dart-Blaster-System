@@ -73,7 +73,7 @@ void setup() {
 
 int i = 0;
 void loop() {
-  delay(1000);
+  delay(100);
   communicator.requestChronoStatus();
   canvasChronoScreenInfo();
   Serial.println(i);
@@ -167,7 +167,7 @@ void canvasChronoScreenInfo(void) {
   display.setTextColor(SSD1306_WHITE, SSD1306_BLACK);  // init text settings
   display.setTextSize(1);
 
-  display.setCursor(70, 6);
+  display.setCursor(75, 6);
   display.print(communicator.chronoStatus.lastFPS, 1);
 
   display.setCursor(27, 35);
