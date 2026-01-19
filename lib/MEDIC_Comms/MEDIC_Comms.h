@@ -104,16 +104,28 @@ struct SendMessageStruct {
 
 
 
-void staticOnReceiveHandler(int numBytesReceived);
-void staticOnRequestHandler(int numBytesReceived);
+//void staticOnReceiveHandler(int numBytesReceived);
+//void staticOnRequestHandler(int numBytesReceived);
 
 class MEDIC {
 	public:
 		MEDIC(int address);
 		void begin();
+		virtual void onReceiveHandler(int numBytesReceived);
+		virtual void onRequestHandler();
+		static MEDIC* globalLib;
+
 	protected:
 		int _address;
 		SendMessageStruct recivedData;
+
+		static void staticOnReceiveHandler(int numBytesReceived) {
+			globalLib->onReceiveHandler(numBytesReceived);
+		}
+
+		static void staticOnRequestHandler() {
+			globalLib->onRequestHandler();
+		}
 	private:
 		
 };
@@ -202,5 +214,7 @@ class MEDIC_CHRONO_RECEIVER: public MEDIC_RECEIVER {
 		chronoSettingsStruct settingStruct;
 		chronoStatusStruct statusStruct;
 };
+
+
 
 #endif

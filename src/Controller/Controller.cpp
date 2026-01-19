@@ -66,14 +66,16 @@ void setup() {
   Serial.println(powerBoardVersion);
   drawNetworkScreenBackground();
   drawNetworkScreensInfo(powerBoardVersion, fireControlVersion, chronoVersion);
-  //transferCanvas2Screem();
-
+  delay(1000);
+  canvasChronoScreenBackground();
 }
 
 
 int i = 0;
 void loop() {
   delay(1000);
+  communicator.requestChronoStatus();
+  canvasChronoScreenInfo();
   Serial.println(i);
   i++;
   // drawTestPattern();
@@ -114,7 +116,7 @@ void drawNetworkScreenBackground() {
 }
 
 void drawNetworkScreensInfo(char *powerBoardVersion, char *FireControlVersion, char *ChronoVersion) {
-    display.setTextColor(SSD1306_WHITE, SSD1306_BLACK);  // init text settings
+  display.setTextColor(SSD1306_WHITE, SSD1306_BLACK);  // init text settings
   display.setTextSize(1);
   display.setCursor(82, 13);
   display.print(version);
@@ -128,80 +130,55 @@ void drawNetworkScreensInfo(char *powerBoardVersion, char *FireControlVersion, c
   display.display();
 }
 
-/*
-void drawNetworkScreensInfo() {
-  canvas.fillScreen(SSD1306_BLACK);  // clear screen
-  canvas.drawRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, SSD1306_WHITE);  // boarder rect
-  canvas.setTextColor(SSD1306_WHITE, SSD1306_BLACK);  // init text settings
-  canvas.setTextSize(1);
-
-  canvas.setCursor(82, 3);
-  canvas.print("Version");
-
-  canvas.setCursor(3, 13);
-  canvas.print("Controller  :");
-  canvas.setCursor(3, 23);
-  canvas.print("Power Board :");
-  canvas.setCursor(3, 33);
-  canvas.print("Fire Control:");
-  canvas.setCursor(3, 43);
-  canvas.print("Chrono");
-}
-
-void canvasNetworkScreensInfo(char *powerBoardVersion, char *FireControlVersion, char *ChronoVersion) {
-  canvas.setTextColor(SSD1306_WHITE, SSD1306_BLACK);  // init text settings
-  canvas.setTextSize(1);
-  canvas.setCursor(82, 13);
-  canvas.print(version);
-  canvas.setCursor(82, 23);
-  canvas.print(powerBoardVersion);
-  canvas.setCursor(82, 33);
-  canvas.print(FireControlVersion);
-  canvas.setCursor(82, 43);
-  canvas.print(ChronoVersion);
-}
-
 void canvasChronoScreenBackground(void) {
-  canvas.fillScreen(SSD1306_BLACK);  // clear screen
-  canvas.drawRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, SSD1306_WHITE);  // boarder rect
-  canvas.setTextColor(SSD1306_WHITE, SSD1306_BLACK);  // init text settings
-  canvas.setTextSize(1);
+  display.fillScreen(SSD1306_BLACK);  // clear screen
+  display.drawRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, SSD1306_WHITE);  // boarder rect
+  display.setTextColor(SSD1306_WHITE, SSD1306_BLACK);  // init text settings
+  display.setTextSize(1);
 
   // draw lines
-  canvas.drawFastHLine(0, 32, SCREEN_WIDTH, SSD1306_WHITE);
-  canvas.drawFastHLine(0, 48, SCREEN_WIDTH, SSD1306_WHITE);
-  canvas.drawFastVLine(32, 64, 32, SSD1306_WHITE);
+  display.drawFastHLine(0, 32, SCREEN_WIDTH, SSD1306_WHITE);
+  display.drawFastHLine(0, 48, SCREEN_WIDTH, SSD1306_WHITE);
+  display.drawFastVLine(32, 64, 32, SSD1306_WHITE);
 
-  canvas.setCursor(20, 6);
-  canvas.print("Last FPS");
+  display.setCursor(20, 6);
+  display.print("Last FPS:");
 
   // FPS
-  canvas.setCursor(20, 22);
-  canvas.print("FPS");
-  canvas.setCursor(2, 35);
-  canvas.print("Max:");
-  canvas.setCursor(2, 51);
-  canvas.print("Min:");
+  display.setCursor(20, 22);
+  display.print("FPS");
+  display.setCursor(2, 35);
+  display.print("Max:");
+  display.setCursor(2, 51);
+  display.print("Min:");
 
   // DPS
-  canvas.setCursor(90, 22);
-  canvas.print("DPS");
-  canvas.setCursor(66, 35);
-  canvas.print("Last:");
-  canvas.setCursor(66, 51);
-  canvas.print("Max:");
+  display.setCursor(90, 22);
+  display.print("DPS");
+  display.setCursor(66, 35);
+  display.print("Last:");
+  display.setCursor(66, 51);
+  display.print("Max:");
+
+  display.display();
 }
 
 void canvasChronoScreenInfo(void) {
-  canvas.setTextColor(SSD1306_WHITE, SSD1306_BLACK);  // init text settings
-  canvas.setTextSize(1);
+  display.setTextColor(SSD1306_WHITE, SSD1306_BLACK);  // init text settings
+  display.setTextSize(1);
+
+  display.setCursor(70, 6);
+  display.print(communicator.chronoStatus.lastFPS, 1);
+
+  display.setCursor(27, 35);
+  display.print(communicator.chronoStatus.maxFPS, 1);
+  display.setCursor(27, 51);
+  display.print(communicator.chronoStatus.minFPS, 1);
+
+  display.setCursor(96, 35);
+  display.print(communicator.chronoStatus.lastDPS, 1);
+  display.setCursor(91, 51);
+  display.print(communicator.chronoStatus.maxDPS, 1);
+
+  display.display();
 }
-
-
-void transferCanvas2Screem(void) {
-  display.drawBitmap(0, 0, canvas.getBuffer(),canvas.width(), canvas.height(), 0xFFFF, 0x0000);
-}
-
-void drawBatteyStatusScreen(void) {}
-
-*/

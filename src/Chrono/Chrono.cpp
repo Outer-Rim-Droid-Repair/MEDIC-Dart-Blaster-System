@@ -5,7 +5,7 @@
 
 const char version[6] = "V0.1";
 
-MEDIC_CHRONO_RECEIVER communicator;
+MEDIC_CHRONO_RECEIVER communicator = MEDIC_CHRONO_RECEIVER();
 
 // TODO add shot counter and add single beam mode to make smaller modular for just shot count/DPS
 // TODO add stand alone with screen mode
@@ -21,7 +21,6 @@ void setup() {
 
   pinMode(13, OUTPUT);
 
-  communicator = MEDIC_CHRONO_RECEIVER();
   communicator.connectOnRequestIdentifyFunction(fillIdentifier);
   communicator.connectOnRequestSettingsFunction(fillSettings);
   communicator.connectSetSettingFunction(setSettings);
