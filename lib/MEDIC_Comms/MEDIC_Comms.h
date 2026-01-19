@@ -4,6 +4,7 @@
 #include "Arduino.h"
 #include "Wire.h"
 
+
 const byte CONTROLLER_ADDRESS = 8;
 const byte POWER_DISTRO_BOARD_ADDRESS = 9;
 const byte FIRE_CONTROL_BOARD_ADDRESS = 10;
@@ -11,9 +12,9 @@ const byte CHRONO_BOARD_ADDRESS = 11;
 
 
 struct IdentifyStatusStruct {
-	char version[16];		// 16
+	char version[6];		//  6
 	bool heartbeat;			//  1
-	byte padding[16];		// 15
+	byte padding[25];		// 25
                             //------
     // total                // 32
 };
@@ -44,18 +45,23 @@ struct PowerBoardSettingsStruct {
 struct fireControlStatusStruct {
 	int safteyState;        //  2
 	int triggerState;       //  2
-	int currentFireMode;    //  2
+	int FireMode; 			//  2
+	int BurstAmount;		//  2
 	bool heartbeat;			//  1
-	byte padding[25];       // 25
+	byte padding[7];       	//  7
 	//------
-	// total                // 32
+	// total                // 16
 };
 
 struct fireControlSettingsStruct {  // TODO figure out how to handdle changin possitional settings
-	bool heartbeat;			//  1
-	byte padding[7];      	//  7
-  	//------
-  	// total                // 8
+	int maxFireRate;			//  2
+	int selectableFireModes[3]; //  6
+	int selectableBurstAmounts[3];// 6
+	int idlePossition;			//  2  // TODO figure out how to not have that as a raw int
+	bool heartbeat;				//  1  // TODO reorder based on size
+	byte padding[1];      		//  1
+  								//------
+  	// total                	//  16
 };
 
 struct chronoStatusStruct {
@@ -85,7 +91,8 @@ struct chronoSettingsStruct {
 enum mode {
 	IDENTIFY,	// to check if a device is in the network
 	STATUS,		// to get a status form the device
-	SETTINGS	// to setup the device
+	GET_SETTINGS,	// to get the settings from the module
+	SET_SETTINGS	// to put the unit in a mode to accept new settings
 };
 
 struct SendMessageStruct {
@@ -97,16 +104,28 @@ struct SendMessageStruct {
 
 
 
-void staticOnReceiveHandler(int numBytesReceived);
-void staticOnRequestHandler(int numBytesReceived);
+//void staticOnReceiveHandler(int numBytesReceived);
+//void staticOnRequestHandler(int numBytesReceived);
 
 class MEDIC {
 	public:
 		MEDIC(int address);
 		void begin();
+		virtual void onReceiveHandler(int numBytesReceived);
+		virtual void onRequestHandler();
+		static MEDIC* globalLib;
+
 	protected:
 		int _address;
 		SendMessageStruct recivedData;
+
+		static void staticOnReceiveHandler(int numBytesReceived) {
+			globalLib->onReceiveHandler(numBytesReceived);
+		}
+
+		static void staticOnRequestHandler() {
+			globalLib->onRequestHandler();
+		}
 	private:
 		
 };
@@ -115,7 +134,7 @@ class MEDIC_CONNTROLLER: public MEDIC {
   public:
 	MEDIC_CONNTROLLER();
 	bool checkDeviceInSystem(byte address);
-	bool SetUnitToMode(int targetAddress, mode selectedMode);
+	void SetUnitToMode(int targetAddress, mode selectedMode);
 	
 	void requestIdentifyStatus(byte address);
     void requestPowerStatus();
@@ -149,6 +168,8 @@ class MEDIC_RECEIVER: public MEDIC {
 		MEDIC_RECEIVER(int address);
 		void begin();
 	
+		void connectSetSettingFunction(void (*funct)());
+
 		void connectOnRequestStatusFunction(void (*funct)());
 		void connectOnRequestIdentifyFunction(void (*funct)());
 		void connectOnRequestSettingsFunction(void (*funct)());
@@ -159,6 +180,8 @@ class MEDIC_RECEIVER: public MEDIC {
 		IdentifyStatusStruct identifyStruct;
 	protected:
 		mode _currentMode;
+
+		void(*_onSetSettingsFunction)();
 		
 		void(*_onRequestStatusFunction)();
 		void(*_onRequestIdentifyFunction)();
@@ -191,5 +214,7 @@ class MEDIC_CHRONO_RECEIVER: public MEDIC_RECEIVER {
 		chronoSettingsStruct settingStruct;
 		chronoStatusStruct statusStruct;
 };
+
+
 
 #endif

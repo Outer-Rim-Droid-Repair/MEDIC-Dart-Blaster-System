@@ -3,9 +3,12 @@
 #include "Chrono.h"
 #include "MEDIC_Comms.h"
 
-const char version[16] = "V0.1";
+const char version[6] = "V0.1";
 
-MEDIC_CHRONO_RECEIVER communicator;
+MEDIC_CHRONO_RECEIVER communicator = MEDIC_CHRONO_RECEIVER();
+
+// TODO add shot counter and add single beam mode to make smaller modular for just shot count/DPS
+// TODO add stand alone with screen mode
 
 void setup() {
   //start serial connection
@@ -18,9 +21,9 @@ void setup() {
 
   pinMode(13, OUTPUT);
 
-  communicator = MEDIC_CHRONO_RECEIVER();
   communicator.connectOnRequestIdentifyFunction(fillIdentifier);
   communicator.connectOnRequestSettingsFunction(fillSettings);
+  communicator.connectSetSettingFunction(setSettings);
   communicator.connectOnRequestStatusFunction(fillStatus);
   communicator.begin();
 }
@@ -70,7 +73,6 @@ void loop() {
           calculateDPS();
           resetDPSReconrds();
         } else {
-                    Serial.println(PreviousTimeBetweenShotsIndex);
           previousTimeBetweenShots[PreviousTimeBetweenShotsIndex] = fireTime_ms - lastFireTime_ms;
           PreviousTimeBetweenShotsIndex++;
 
@@ -121,6 +123,7 @@ float calculateDPS() {
   if (dps > maxDPS or maxDPS < 0) {
     maxDPS = dps;
   } 
+  lastDPS = dps;
   return dps;
 }
 
@@ -177,11 +180,18 @@ void fillStatus() {
   communicator.statusStruct.maxFPS = maxMPS * unitAdjuster;
   communicator.statusStruct.minFPS = minMPS * unitAdjuster;
   communicator.statusStruct.maxDPS = maxDPS;
-  communicator.statusStruct.lastDPS = -1;  // TODO implemet
+  communicator.statusStruct.lastDPS = lastDPS;
 }
 
 void fillIdentifier() {
   strcpy(communicator.identifyStruct.version, version);
+}
+
+void setSettings() {
+  DPSAverageLength = communicator.settingStruct.DPSAverageLength;
+  currentRollingLength = communicator.settingStruct.MPSRollingLength;
+  timeoutDPS_ms = communicator.settingStruct.timeoutDPS_ms;
+  useFPS = communicator.settingStruct.useFPS;
 }
 
 void fillSettings() {
