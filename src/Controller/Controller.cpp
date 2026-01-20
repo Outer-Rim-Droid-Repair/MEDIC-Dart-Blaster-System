@@ -60,13 +60,39 @@ void setup() {
 int i = 0;
 unsigned long lastupdate = 0;
 const int updateSpeed = 100;
+bool buttonUpdate = false;
 
 void loop() {
   if (millis() - lastupdate >= updateSpeed){
-    //updateChronoStatusScreen();
-    //updateFireModeScreen();
+    if (selectedScreenState == VERSION) {
+      updateVersionScreen();
+    } else if (selectedScreenState == FIRE_MODE_STATUS) {
+      updateFireModeScreen();
+    } else if (selectedScreenState == CHRONO_STATUS) {
+      updateChronoStatusScreen();
+    } else if (selectedScreenState == POWER_STATUS) {
+      
+    } 
+    lastupdate = millis();
   }
   readKeypad();
+  if (buttonUpdate) {
+    unsigned int index = selectedScreenState;
+    if (lastPressed == LEFT) {
+      if (index <= 0) {
+        index = sizeof(screenOrder);
+      }
+      index -= 1;
+    } else if (lastPressed == RIGHT) {
+      index += 1;
+      if (index >= sizeof(screenOrder)) {
+        index = 0;
+      }
+    }
+    selectedScreenState = screenOrder[index];
+    Serial.println(index);
+    buttonUpdate = false;
+  }
   delay(20);
 }
 
@@ -99,8 +125,9 @@ void readKeypad(void) {
     lastPressed = NONE;
     buttonState = HIGH;
   }
-  if (buttonState != lastButtonState) {
-    Serial.println(lastPressed);
+  if (buttonState != lastButtonState && lastPressed != NONE) {
+    //Serial.println(lastPressed);
+    buttonUpdate = true;
   }
 
   lastButtonState = buttonState;
@@ -189,8 +216,8 @@ void updateChronoStatusScreen(void) {
   if (currentScreenState != CHRONO_STATUS) {
     drawChronoScreenBackground();
   }
-  communicator.requestChronoStatus();
-  drawChronoScreenInfo();
+  //communicator.requestChronoStatus();
+  //drawChronoScreenInfo();
 }
 
 void drawChronoScreenBackground(void) {
@@ -253,7 +280,7 @@ void updateFireModeScreen(void) {
     drawFireModeScreenBackground();
   }
   //communicator.requestFireControlStatus();
-  drawFireModeScreenInfo();
+  //drawFireModeScreenInfo();
 }
 
 void drawFireModeScreenBackground(void) {

@@ -37,6 +37,8 @@ enum SCREEN_STATE {
     POWER_STATUS,
     OTHER
 };
+const SCREEN_STATE screenOrder[] = {VERSION, CHRONO_STATUS, FIRE_MODE_STATUS, POWER_STATUS};
+SCREEN_STATE selectedScreenState = VERSION;
 SCREEN_STATE currentScreenState = OTHER;
 
 bool powerBoardPresent;

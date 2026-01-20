@@ -79,7 +79,7 @@ void loop(void) {
     lastPressed = NONE;
     buttonState = HIGH;
   }
-  if (buttonState != lastButtonState) {
+  if (buttonState != lastButtonState && lastPressed != NONE) {
     Serial.println(lastPressed);
   }
 
