@@ -410,7 +410,6 @@ void update_fire_mode() {
 }
 
 void fillStatus() {
-  Serial.println("fill status");
   communicator.statusStruct.FireMode = selectableFireModes[selectedFireMode];
   communicator.statusStruct.BurstAmount = selectableBurstAmount[selectedFireMode];
   communicator.statusStruct.safteyState = safetyState;
@@ -418,12 +417,10 @@ void fillStatus() {
 }
 
 void fillIdentifier() {
-  Serial.println("fill identifier");
   strcpy(communicator.identifyStruct.version, version);
 }
 
 void setSettings() {
-  Serial.println("set settings");
   memcpy(&selectableFireModes, &communicator.settingStruct.selectableFireModes[0], sizeof(selectableFireModes));
   memcpy(&selectableBurstAmount, &communicator.settingStruct.selectableFireModes[0], sizeof(selectableBurstAmount));
   maxDPS = communicator.settingStruct.maxFireRate;
@@ -432,7 +429,6 @@ void setSettings() {
 
 void fillSettings() {
   // convert firemode to int this should get changed back. see TODO in MEDIC_Comms
-  Serial.println("fill settings");
   unsigned int modes[3];
   for (unsigned int i = 0; i < 3; i++){
     modes[i] = (unsigned int) selectableFireModes;

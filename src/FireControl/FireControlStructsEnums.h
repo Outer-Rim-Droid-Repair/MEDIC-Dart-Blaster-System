@@ -14,7 +14,7 @@ enum fireMode // valid firemodes
   BURST_FIRE, // Fire darts till burstLimit is hit. Stop on trigger release
   AUTO_FIRE  // Fire untill trigger released
 };
-const char* fireModeStr[] = {"Single Fire", "Burst Fire", "Full Auto"};
+const char* fireModeStr[] = {"Single", "Burst", "Auto"};
 
 struct fireModeSetup {
   fireMode mode;

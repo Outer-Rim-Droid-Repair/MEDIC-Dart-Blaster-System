@@ -103,10 +103,6 @@ struct SendMessageStruct {
 };
 
 
-
-//void staticOnReceiveHandler(int numBytesReceived);
-//void staticOnRequestHandler(int numBytesReceived);
-
 class MEDIC {
 	public:
 		MEDIC(int address);
