@@ -47,18 +47,9 @@ bool chronoPresent;
 
 void readKeypad(void);
 
-void drawTestPattern(void);
 void updateConnectedDevices(void);
 void updateVersionScreen(void);
 void updateChronoStatusScreen(void);
 void updateFireModeScreen(void);
-
-
-void drawNetworkScreenBackground() ;
-void drawNetworkScreensInfo(char *powerBoardVersion, char *FireControlVersion, char *ChronoVersion);
-void drawChronoScreenBackground(void);
-void drawChronoScreenInfo(void);
-void drawFireModeScreenBackground(void);
-void drawFireModeScreenInfo(void);
 
 #endif

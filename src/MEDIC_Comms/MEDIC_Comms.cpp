@@ -1,3 +1,6 @@
+#ifndef MEDIC_Comms_cpp
+#define MEDIC_Comms_cpp
+
 #include "Arduino.h"
 #include "MEDIC_Comms.h"
 #include "Wire.h"
@@ -297,3 +300,4 @@ void MEDIC_CHRONO_RECEIVER::onRequestHandler() {
 	}
 }
 
+#endif
