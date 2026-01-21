@@ -91,16 +91,8 @@ void loop() {
   if (buttonUpdate) {
     unsigned int index = selectedScreenState;
     if (lastPressed == LEFT) {
-      /*if (index <= 0) {
-        index = sizeof(screenOrder);
-      }
-      index -= 1;*/
       findNextValidScreen(false);
     } else if (lastPressed == RIGHT) {
-      /*index += 1;
-      if (index >= sizeof(screenOrder)) {
-        index = 0;
-      }*/
       findNextValidScreen(true);
     }
     selectedScreenState = screenOrder[index];
@@ -123,8 +115,6 @@ void findNextValidScreen(bool countUp) {
     }
     index = (index + direction) % sizeof(screenOrder);
     static SCREEN_STATE state = screenOrder[index];
-    Serial.print("scren state: ");
-    Serial.println(index);
 
     if (state == VERSION) {
       selectedScreenState = VERSION;
