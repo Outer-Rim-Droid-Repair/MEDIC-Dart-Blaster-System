@@ -51,5 +51,6 @@ void updateConnectedDevices(void);
 void updateVersionScreen(void);
 void updateChronoStatusScreen(void);
 void updateFireModeScreen(void);
+void findNextValidScreen(bool countUp);
 
 #endif
