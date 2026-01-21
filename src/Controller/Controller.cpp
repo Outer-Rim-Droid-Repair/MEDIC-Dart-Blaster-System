@@ -89,14 +89,11 @@ void loop() {
   }
   readKeypad();
   if (buttonUpdate) {
-    unsigned int index = selectedScreenState;
     if (lastPressed == LEFT) {
       findNextValidScreen(false);
     } else if (lastPressed == RIGHT) {
       findNextValidScreen(true);
     }
-    selectedScreenState = screenOrder[index];
-    Serial.println(index);
     buttonUpdate = false;
   }
   delay(20);
@@ -109,23 +106,24 @@ void findNextValidScreen(bool countUp) {
   }
 
   unsigned int index = selectedScreenState;
+  SCREEN_STATE state;
   while (true) {
-    if (index <= 0) {
+    if (index <= 0 and !countUp) {
       index = sizeof(screenOrder);
     }
     index = (index + direction) % sizeof(screenOrder);
-    static SCREEN_STATE state = screenOrder[index];
+    state = screenOrder[index];
 
     if (state == VERSION) {
       selectedScreenState = VERSION;
       break;
-    } else if (state == CHRONO_STATUS && chronoPresent) {
+    } else if ((state == CHRONO_STATUS) and (chronoPresent)) {
       selectedScreenState = CHRONO_STATUS;
       break;
-    } else if (state == FIRE_MODE_STATUS && fireControlPresent) {
+    } else if ((state == FIRE_MODE_STATUS) and (fireControlPresent)) {
       selectedScreenState = FIRE_MODE_STATUS;
       break;
-    } else if (state == POWER_STATUS && powerBoardPresent) {
+    } else if ((state == POWER_STATUS) and (powerBoardPresent)) {
       selectedScreenState = POWER_STATUS;
       break;
     }
