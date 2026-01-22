@@ -10,11 +10,12 @@ class Screen {
     public:
         Screen() {};
         Screen(Adafruit_SSD1306 screen_obj, MEDIC_CONNTROLLER *controller);
-        virtual void drawBackgrond();
-        virtual void drawInfo();
-        void drawTestPattern(void);
+        virtual void drawBackgrond() {}
+        virtual void drawInfo() {}
 
-        bool active = false;
+        void drawTestPattern(void);
+        void invertSection(int x1, int y1, int x2, int y2);
+        void drawQuestionBox(char *question);
 
     protected:
         Adafruit_SSD1306 _screen_obj;
@@ -32,7 +33,8 @@ class Version_Screen: public Screen {
         Version_Screen(Adafruit_SSD1306 screen_obj, MEDIC_CONNTROLLER *controller): Screen(screen_obj, controller) {}
         void drawBackgrond() override;
         void drawInfo(char *ControllerVersion, char *powerBoardVersion, char *FireControlVersion, char *ChronoVersion);
-};
+
+    };
 
 class Chrono_Screen: public Screen {
     public: 
@@ -40,6 +42,7 @@ class Chrono_Screen: public Screen {
         Chrono_Screen(Adafruit_SSD1306 screen_obj, MEDIC_CONNTROLLER *controller): Screen(screen_obj, controller) {}
         void drawBackgrond() override;
         void drawInfo() override;
+
 };
 
 class Fire_Control_Screen: public Screen {
@@ -48,6 +51,7 @@ class Fire_Control_Screen: public Screen {
         Fire_Control_Screen(Adafruit_SSD1306 screen_obj, MEDIC_CONNTROLLER *controller): Screen(screen_obj, controller) {}
         void drawBackgrond() override;
         void drawInfo() override;
+
 };
 
 #endif

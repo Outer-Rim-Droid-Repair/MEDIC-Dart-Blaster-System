@@ -41,6 +41,7 @@ const SCREEN_STATE screenOrder[] = {VERSION, CHRONO_STATUS, FIRE_MODE_STATUS, PO
 SCREEN_STATE selectedScreenState = VERSION;
 SCREEN_STATE currentScreenState = OTHER;
 
+
 bool powerBoardPresent;
 bool fireControlPresent;
 bool chronoPresent;

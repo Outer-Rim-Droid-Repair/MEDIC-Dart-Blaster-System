@@ -72,10 +72,12 @@ int i = 0;
 unsigned long lastupdate = 0;
 const int updateSpeed = 100;
 bool buttonUpdate = false;
+bool editMode = false;
+bool redrawBackground = true;
 
 void loop() {
   
-  if (millis() - lastupdate >= updateSpeed){
+  if ((millis() - lastupdate >= updateSpeed) and (!editMode)){
     if (selectedScreenState == VERSION) {
       updateVersionScreen();
     } else if (selectedScreenState == FIRE_MODE_STATUS) {
@@ -85,14 +87,34 @@ void loop() {
     } else if (selectedScreenState == POWER_STATUS) {
       display.fillScreen(SSD1306_BLACK);  // clear screen
     } 
+    // Version_Screen_Control.invertSection(20, 20 , 60, 60);
     lastupdate = millis();
   }
   readKeypad();
   if (buttonUpdate) {
-    if (lastPressed == LEFT) {
-      findNextValidScreen(false);
-    } else if (lastPressed == RIGHT) {
-      findNextValidScreen(true);
+    if (lastPressed == IN) {
+      editMode = !editMode;
+    }
+    if (!editMode) {
+      if (lastPressed == LEFT) {
+        findNextValidScreen(false);
+      } else if (lastPressed == RIGHT) {
+        findNextValidScreen(true);
+      }
+    } else {
+      if (currentScreenState == CHRONO_STATUS) {
+        if (lastPressed == IN) {
+          Chrono_Screen_Control.drawQuestionBox("Reset Data?");
+          redrawBackground = true;       
+        } else if (lastPressed == UP) {
+          // reset chrono
+          Serial.println("up");
+          editMode = false;
+        } else if (lastPressed == DOWN) {
+          Serial.println("down");
+          editMode = false;
+        }
+      }
     }
     buttonUpdate = false;
   }
@@ -120,7 +142,7 @@ void findNextValidScreen(bool countUp) {
     } else if ((state == CHRONO_STATUS) and (chronoPresent)) {
       selectedScreenState = CHRONO_STATUS;
       break;
-    } else if ((state == FIRE_MODE_STATUS) and (fireControlPresent)) {
+    } else if ((state == FIRE_MODE_STATUS) and (!fireControlPresent)) {
       selectedScreenState = FIRE_MODE_STATUS;
       break;
     } else if ((state == POWER_STATUS) and (powerBoardPresent)) {
@@ -182,9 +204,10 @@ void updateConnectedDevices(void) {
 // --------------------- screens ---------------------
 // Version
 void updateVersionScreen(void) {
-  if (currentScreenState != VERSION) {
+  if ((currentScreenState != VERSION) or redrawBackground) {
       Version_Screen_Control.drawBackgrond();
       currentScreenState = VERSION;
+      redrawBackground = false;
   }
   char controllerVersion[6] = "";
   char powerBoardVersion[6] = "N/A";  // char[6] 
@@ -209,9 +232,10 @@ void updateVersionScreen(void) {
 
 // Chrono
 void updateChronoStatusScreen(void) {
-  if (currentScreenState != CHRONO_STATUS) {
+  if ((currentScreenState != CHRONO_STATUS) or redrawBackground) {
     Chrono_Screen_Control.drawBackgrond();
     currentScreenState = CHRONO_STATUS;
+    redrawBackground = false;
   }
   //communicator.requestChronoStatus();
   //Chrono_Screen_Control.drawInfo();
@@ -219,9 +243,10 @@ void updateChronoStatusScreen(void) {
 
 // Fire Mode
 void updateFireModeScreen(void) {
-  if (currentScreenState != FIRE_MODE_STATUS) {
+  if ((currentScreenState != FIRE_MODE_STATUS) or redrawBackground) {
     Fire_Control_Screen_Control.drawBackgrond();
     currentScreenState = FIRE_MODE_STATUS;
+    redrawBackground = false;
   }
   //communicator.requestFireControlStatus();
   //Fire_Control_Screen_Control.drawInfo();

@@ -14,9 +14,6 @@ Screen::Screen(Adafruit_SSD1306 screen_obj, MEDIC_CONNTROLLER *controller) {
     _controller = *controller;
 }
 
-void Screen::drawBackgrond() {}
-void Screen::drawInfo() {}
-
 void Screen::drawTestPattern(void) {
   _screen_obj.clearDisplay();
 
@@ -28,9 +25,52 @@ void Screen::drawTestPattern(void) {
   }
 }
 
+void Screen::invertSection(int x1, int y1, int x2, int y2) {
+    if ((x1 >= x2) or (y1 >= y2)) {
+        return;
+    }
+    for (int i = x1; i < x2; i++) {
+        for (int j = y1; j < y2; j++) {
+            if (_screen_obj.getPixel(i, j)) {
+                _screen_obj.drawPixel(i, j, SSD1306_BLACK);
+            } else {
+                _screen_obj.drawPixel(i, j, SSD1306_WHITE);
+            }
+        }
+    }
+    _screen_obj.display();
+}
+
+void Screen::drawQuestionBox(char *question){
+    _screen_obj.setTextColor(SSD1306_BLACK, SSD1306_WHITE);  // init text settings
+    _screen_obj.setTextSize(1);
+    int16_t x1;
+    int16_t y1;
+    uint16_t length;
+    uint16_t height;
+    _screen_obj.getTextBounds(question, 0, 0, &x1, &y1, &length, &height);
+    if (length < 72) {
+        length = 72;
+    }
+    x1 = (_width - length) / 2;
+    y1 = (_height - height) / 2;
+    _screen_obj.fillRect(x1 - 2, y1 - 2, length + 4, 2*height + 6, SSD1306_WHITE);
+    _screen_obj.setCursor(x1, y1);
+    _screen_obj.print(question);
+
+    y1 += (height + 2);
+    _screen_obj.setCursor(x1, y1);
+    _screen_obj.print("YES:");
+    _screen_obj.write(0x18);
+    _screen_obj.print(" NO:");
+    _screen_obj.write(0x19);
+
+    _screen_obj.display();
+}
+
+
 void Version_Screen::drawBackgrond() {
     _screen_obj.fillScreen(SSD1306_BLACK);  // clear screen
-    
     _screen_obj.drawRect(0, 0, _width, _height, SSD1306_WHITE);  // boarder rect
     _screen_obj.setTextColor(SSD1306_WHITE, SSD1306_BLACK);  // init text settings
     _screen_obj.setTextSize(1);
@@ -163,5 +203,6 @@ void Fire_Control_Screen::drawInfo() {
 
     _screen_obj.display();
 }
+
 
 #endif
