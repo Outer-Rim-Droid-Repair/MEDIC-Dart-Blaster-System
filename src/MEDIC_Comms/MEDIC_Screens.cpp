@@ -68,6 +68,10 @@ void Screen::drawQuestionBox(char *question){
     _screen_obj.display();
 }
 
+void Screen::forceScreenDraw() {
+    _screen_obj.display();
+}
+
 
 void Version_Screen::drawBackgrond() {
     _screen_obj.fillScreen(SSD1306_BLACK);  // clear screen
@@ -169,7 +173,7 @@ void Fire_Control_Screen::drawBackgrond() {
     _screen_obj.drawFastVLine(60, 0, _height, SSD1306_WHITE);
     _screen_obj.drawFastHLine(0, 16, _width, SSD1306_WHITE);
     _screen_obj.drawFastHLine(0, 32, _width, SSD1306_WHITE);
-    _screen_obj.drawFastHLine(0, 48, _width, SSD1306_WHITE);
+    _screen_obj.drawFastHLine(0, 47, _width, SSD1306_WHITE);
 
     _screen_obj.setCursor(15, 5);
     _screen_obj.print("Mode");
@@ -202,6 +206,14 @@ void Fire_Control_Screen::drawInfo() {
     _screen_obj.print(_controller.fireControlSettings.selectableBurstAmounts[2], 1);
 
     _screen_obj.display();
+}
+
+void Fire_Control_Screen::addOutline(int x, int y, bool isWhite) {
+    if (isWhite){
+        _screen_obj.drawRect(x1[x], y1[y], outlineWidth[x], outlineHeight, SSD1306_WHITE);
+    } else {
+        _screen_obj.drawRect(x1[x], y1[y], outlineWidth[x], outlineHeight, SSD1306_BLACK);
+    }
 }
 
 

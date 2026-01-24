@@ -49,9 +49,15 @@ bool chronoPresent;
 void readKeypad(void);
 
 void updateConnectedDevices(void);
+
 void updateVersionScreen(void);
+
 void updateChronoStatusScreen(void);
+void editChronoStatusScreen(void);
+
 void updateFireModeScreen(void);
+void editFireModeScreen(void);
+
 void findNextValidScreen(bool countUp);
 
 #endif

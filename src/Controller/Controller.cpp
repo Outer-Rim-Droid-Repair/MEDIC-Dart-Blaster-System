@@ -93,7 +93,7 @@ void loop() {
   readKeypad();
   if (buttonUpdate) {
     if (lastPressed == IN) {
-      editMode = !editMode;
+      editMode = true;
     }
     if (!editMode) {
       if (lastPressed == LEFT) {
@@ -103,17 +103,9 @@ void loop() {
       }
     } else {
       if (currentScreenState == CHRONO_STATUS) {
-        if (lastPressed == IN) {
-          Chrono_Screen_Control.drawQuestionBox("Reset Data?");
-          redrawBackground = true;       
-        } else if (lastPressed == UP) {
-          // reset chrono
-          Serial.println("up");
-          editMode = false;
-        } else if (lastPressed == DOWN) {
-          Serial.println("down");
-          editMode = false;
-        }
+        editChronoStatusScreen();
+      } else if (currentScreenState == FIRE_MODE_STATUS) {
+        editFireModeScreen();
       }
     }
     buttonUpdate = false;
@@ -241,6 +233,20 @@ void updateChronoStatusScreen(void) {
   //Chrono_Screen_Control.drawInfo();
 }
 
+void editChronoStatusScreen(void) {
+  if (lastPressed == IN) {
+    Chrono_Screen_Control.drawQuestionBox("Reset Data?");
+    redrawBackground = true;       
+  } else if (lastPressed == UP) {
+    // reset chrono
+    Serial.println("up");
+    editMode = false;
+  } else if (lastPressed == DOWN) {
+    Serial.println("down");
+    editMode = false;
+  }
+}
+
 // Fire Mode
 void updateFireModeScreen(void) {
   if ((currentScreenState != FIRE_MODE_STATUS) or redrawBackground) {
@@ -250,4 +256,37 @@ void updateFireModeScreen(void) {
   }
   //communicator.requestFireControlStatus();
   //Fire_Control_Screen_Control.drawInfo();
+}
+
+void editFireModeScreen(void) {
+  static unsigned int xLoaction = 0;
+  static unsigned int yLocation = 0;
+  Fire_Control_Screen_Control.addOutline(xLoaction, yLocation, false);
+  if (lastPressed == DOWN) {
+    // reset chrono
+    Serial.println("DOWN");
+    if (yLocation < ((sizeof(Fire_Control_Screen_Control.y1) / sizeof(*Fire_Control_Screen_Control.y1)) - 1)) {
+      yLocation += 1;
+    }
+  } else if (lastPressed == UP) {
+    Serial.println("up");
+    if (yLocation > 0) {
+      yLocation -= 1;
+    }
+  } else if (lastPressed == RIGHT) {
+    // reset chrono
+    Serial.println("right");
+    if (xLoaction < ((sizeof(Fire_Control_Screen_Control.x1) / sizeof(*Fire_Control_Screen_Control.x1)) - 1)) {
+      xLoaction += 1;
+    }
+  } else if (lastPressed == LEFT) {
+    Serial.println("left");
+    if (xLoaction > 0) {
+      xLoaction -= 1;
+    }
+  }
+
+
+  Fire_Control_Screen_Control.addOutline(xLoaction, yLocation, true);
+  Fire_Control_Screen_Control.forceScreenDraw();
 }
