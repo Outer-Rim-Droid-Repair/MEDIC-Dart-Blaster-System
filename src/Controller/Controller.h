@@ -24,11 +24,13 @@ enum POSSITIONS {
   LEFT,
   RIGHT,
   IN,
+  ROTARY,
   NONE
 };
 POSSITIONS lastPressed = NONE;
 RotaryEncoder encoder(PIN_ENCODER_A, PIN_ENCODER_B, RotaryEncoder::LatchMode::TWO03);
 int last_rotary = 0;
+int rotary_change = 0;
 
 enum SCREEN_STATE {
     VERSION,
@@ -41,6 +43,13 @@ const SCREEN_STATE screenOrder[] = {VERSION, CHRONO_STATUS, FIRE_MODE_STATUS, PO
 SCREEN_STATE selectedScreenState = VERSION;
 SCREEN_STATE currentScreenState = OTHER;
 
+enum EDIT_MODES {
+    INIT,
+    MODIFY,
+    CONFIRM
+};
+EDIT_MODES lastEditMode = INIT;
+
 
 bool powerBoardPresent;
 bool fireControlPresent;
@@ -51,6 +60,7 @@ void readKeypad(void);
 void updateConnectedDevices(void);
 
 void updateVersionScreen(void);
+void editVersionScreen(void);
 
 void updateChronoStatusScreen(void);
 void editChronoStatusScreen(void);

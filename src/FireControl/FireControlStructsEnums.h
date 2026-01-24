@@ -10,9 +10,9 @@
 
 enum fireMode // valid firemodes
 {
-  SINGLE_FIRE, // Fire one dart
-  BURST_FIRE, // Fire darts till burstLimit is hit. Stop on trigger release
-  AUTO_FIRE  // Fire untill trigger released
+  SINGLE_FIRE = 0, // Fire one dart
+  BURST_FIRE = 1,  // Fire darts till burstLimit is hit. Stop on trigger release
+  AUTO_FIRE = 2    // Fire untill trigger released
 };
 const char* fireModeStr[] = {"Single", "Burst", "Auto"};
 

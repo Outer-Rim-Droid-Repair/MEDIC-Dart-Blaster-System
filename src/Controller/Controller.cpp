@@ -92,8 +92,9 @@ void loop() {
   }
   readKeypad();
   if (buttonUpdate) {
-    if (lastPressed == IN) {
+    if (lastPressed == IN and !editMode) {
       editMode = true;
+      lastEditMode = INIT;
     }
     if (!editMode) {
       if (lastPressed == LEFT) {
@@ -102,7 +103,9 @@ void loop() {
         findNextValidScreen(true);
       }
     } else {
-      if (currentScreenState == CHRONO_STATUS) {
+      if (currentScreenState == VERSION) {
+        editVersionScreen();
+      } else if (currentScreenState == CHRONO_STATUS) {
         editChronoStatusScreen();
       } else if (currentScreenState == FIRE_MODE_STATUS) {
         editFireModeScreen();
@@ -152,18 +155,22 @@ void findNextValidScreen(bool countUp) {
 
 void readKeypad(void) {
   encoder.tick();
-  int curr_rotary = encoder.getPosition();
-  RotaryEncoder::Direction direction = encoder.getDirection();
-  
-  if (curr_rotary != last_rotary) {
-    Serial.print("Encoder value: ");
-    Serial.print(curr_rotary);
-    Serial.print(" direction: ");
-    Serial.println((int)direction);
-  }
-  last_rotary = curr_rotary;
   int buttonState = LOW;
   static int lastButtonState = HIGH;
+
+  int curr_rotary = encoder.getPosition();
+  //RotaryEncoder::Direction direction = encoder.getDirection();
+  
+  if (curr_rotary != last_rotary) {
+    // Serial.print("Encoder value: ");
+    // Serial.print(curr_rotary);
+    // Serial.print(" direction: ");
+    // Serial.println((int)direction);
+    rotary_change = last_rotary - curr_rotary;
+    buttonState = ROTARY;
+    buttonUpdate = true;
+  }
+  
 
   if (! digitalRead(BUTTON_UP)) {
     lastPressed = UP;
@@ -184,6 +191,7 @@ void readKeypad(void) {
     buttonUpdate = true;
   }
 
+  last_rotary = curr_rotary;
   lastButtonState = buttonState;
 }
 
@@ -222,6 +230,9 @@ void updateVersionScreen(void) {
   Version_Screen_Control.drawInfo(controllerVersion, powerBoardVersion, fireControlVersion, chronoVersion);
 }
 
+void editVersionScreen(void) {
+  editMode = false;
+}
 // Chrono
 void updateChronoStatusScreen(void) {
   if ((currentScreenState != CHRONO_STATUS) or redrawBackground) {
@@ -239,10 +250,8 @@ void editChronoStatusScreen(void) {
     redrawBackground = true;       
   } else if (lastPressed == UP) {
     // reset chrono
-    Serial.println("up");
     editMode = false;
   } else if (lastPressed == DOWN) {
-    Serial.println("down");
     editMode = false;
   }
 }
@@ -261,29 +270,52 @@ void updateFireModeScreen(void) {
 void editFireModeScreen(void) {
   static unsigned int xLoaction = 0;
   static unsigned int yLocation = 0;
+  if (lastPressed == IN) {
+    if (lastEditMode == INIT) {
+      lastEditMode = MODIFY;
+      xLoaction = 0;
+      yLocation = 0;
+    } else if (lastEditMode == MODIFY) {
+      Chrono_Screen_Control.drawQuestionBox("Confirm Changes?");
+      redrawBackground = true;  
+      lastEditMode = CONFIRM;
+      return;
+    }
+  }
+
+  if (lastEditMode == CONFIRM) {
+    if (lastPressed == UP) {
+      // send changes
+      editMode = false;
+    } else if (lastPressed == DOWN) {
+      lastEditMode = MODIFY;
+      updateFireModeScreen();
+      Fire_Control_Screen_Control.addOutline(xLoaction, yLocation, true);
+      Fire_Control_Screen_Control.forceScreenDraw();
+    }
+    return;
+  }
+
+
   Fire_Control_Screen_Control.addOutline(xLoaction, yLocation, false);
   if (lastPressed == DOWN) {
-    // reset chrono
-    Serial.println("DOWN");
     if (yLocation < ((sizeof(Fire_Control_Screen_Control.y1) / sizeof(*Fire_Control_Screen_Control.y1)) - 1)) {
       yLocation += 1;
     }
   } else if (lastPressed == UP) {
-    Serial.println("up");
     if (yLocation > 0) {
       yLocation -= 1;
     }
   } else if (lastPressed == RIGHT) {
-    // reset chrono
-    Serial.println("right");
     if (xLoaction < ((sizeof(Fire_Control_Screen_Control.x1) / sizeof(*Fire_Control_Screen_Control.x1)) - 1)) {
       xLoaction += 1;
     }
   } else if (lastPressed == LEFT) {
-    Serial.println("left");
     if (xLoaction > 0) {
       xLoaction -= 1;
     }
+  } else if (lastPressed == ROTARY) {
+    
   }
 
 
